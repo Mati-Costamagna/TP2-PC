@@ -1,5 +1,7 @@
 package monitor;
 
+import monitor.MonitorInterface;
+
 public class Monitor implements MonitorInterface {
     private final int[] marcado;
     private final boolean[][] pre;

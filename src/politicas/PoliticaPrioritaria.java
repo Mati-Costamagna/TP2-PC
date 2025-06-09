@@ -1,5 +1,6 @@
 package politicas;
 import static util.ModoProcesamiento.esSimple;
+import politicas.Politica;
 
 public class PoliticaPrioritaria implements Politica {
 

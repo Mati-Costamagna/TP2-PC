@@ -1,17 +1,18 @@
 package workers;
 
-import monitor.MonitorInterface;
+import monitor.Monitor;
 import politicas.Politica;
 import util.Logger;
 import util.TransicionesTemporales;
 
+
 public class TransicionWorker extends Thread {
     private final int[] transiciones; // transiciones que este hilo puede disparar
-    private final MonitorInterface monitor;
+    private final Monitor monitor;
     private final Politica politica;
     private final String nombre;
 
-    public TransicionWorker(String nombre, int[] transiciones, MonitorInterface monitor, Politica politica) {
+    public TransicionWorker(String nombre, int[] transiciones, Monitor monitor, Politica politica) {
         this.nombre = nombre;
         this.transiciones = transiciones;
         this.monitor = monitor;

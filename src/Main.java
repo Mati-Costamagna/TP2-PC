@@ -2,7 +2,9 @@ package main;
 
 import monitor.Monitor;
 import monitor.MonitorInterface;
-import politicas.*;
+import politicas.PoliticaAleatoria;
+import politicas.PoliticaPrioritaria;
+import politicas.Politica;
 import workers.TransicionWorker;
 
 public class Main {
@@ -16,14 +18,14 @@ public class Main {
 
         // Definiciones como arriba (omitir por brevedad, deben copiarse)
 
-        MonitorInterface monitor = new Monitor(marcadoInicial, pre, post);
+        Monitor monitor = new Monitor(marcadoInicial, pre, post);
 
-        Politica politica = new PoliticaAleatoria(); // o new PoliticaPrioritaria()
+        PoliticaAleatoria politicaAleatoria = new PoliticaAleatoria(); // o new PoliticaPrioritaria()
 
         // Simulamos 3 hilos: uno para cada tipo de procesamiento
-        TransicionWorker simple = new TransicionWorker("Simple", new int[]{3, 6}, monitor, politica);
-        TransicionWorker medio  = new TransicionWorker("Medio", new int[]{4, 5}, monitor, politica);
-        TransicionWorker alto   = new TransicionWorker("Alto", new int[]{7, 8, 9, 10}, monitor, politica);
+        TransicionWorker simple = new TransicionWorker("Simple", new int[]{3, 6}, monitor, politicaAleatoria);
+        TransicionWorker medio  = new TransicionWorker("Medio", new int[]{4, 5}, monitor, politicaAleatoria);
+        TransicionWorker alto   = new TransicionWorker("Alto", new int[]{7, 8, 9, 10}, monitor, politicaAleatoria);
 
         simple.start();
         medio.start();

@@ -1,6 +1,7 @@
 package politicas;
 
 import java.util.Random;
+import politicas.Politica;
 
 public class PoliticaAleatoria implements Politica {
     private final Random random = new Random();
