@@ -14,16 +14,15 @@ public class Transiciones extends Thread {
         invarianteT = t;
     }
 
-
     @Override
     public void run(){
         while(!Thread.currentThread().isInterrupted()){
             for(int transicion : invarianteT) {
                 boolean disparo = monitor.fireTransition(transicion);
                 if (disparo) {
-                    //Logger
+                    System.out.println("Transicion " +  transicion + " disparada por " + Thread.currentThread().getName());
                 } else {
-
+                    System.out.println("Transicion " +  transicion + " no disparada por " + Thread.currentThread().getName());
                 }
             }
         }

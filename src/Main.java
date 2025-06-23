@@ -11,7 +11,7 @@ public class Main {
             {1, -1, 0,  0,  0,  0,  0,  0,  0,  0,  0,  0},
             {-1,1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0},
             {0, 1,  -1, 0,  0,  -1, 0,  -1, 0,  0,  0,  0},
-            {0, 1,  -1, 0,  0,  -1, 0,  -1, 0,  0,  0,  0},
+            {0, 0,  1,  -1,  0,  0, 0,  0,  0,  0,  0,  0},
             {0, 0,  0,  1,  -1, 0,  0,  0,  0,  0,  0,  0},
             {0, 0,  -1, 0,  1,  -1, 1,  -1, 0,  0,  1,  0},
             {0, 0,  0,  0,  0,  1,  -1, 0,  0,  0,  0,  0},
@@ -36,11 +36,11 @@ public class Main {
         transicionesThreads[i].start();
     }
 
-    try{
-        for(Thread t: transicionesThreads) t.join();
-    } catch (InterruptedException e) {
-        throw new RuntimeException(e);
-    }
+//    try{
+//        for(Thread t: transicionesThreads) t.join();
+//    } catch (InterruptedException e) {
+//        throw new RuntimeException(e);
+//    }
 
     }
 }

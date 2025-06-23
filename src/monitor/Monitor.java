@@ -5,8 +5,10 @@ import main.politicas.PoliticaInterface;
 import main.red.RdP;
 import main.threads.Transiciones;
 
+import java.sql.Time;
 import java.util.ArrayList;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 public class Monitor implements MonitorInterface {
     private RdP red;
@@ -27,6 +29,9 @@ public class Monitor implements MonitorInterface {
             cola[i] = new Semaphore(1);
         }
         politica = p;
+        sensibilizadas =  new boolean[r.getTransicionesSensibilizadas().length];
+        enCola = new boolean[r.getTransicionesSensibilizadas().length];
+        disp = new boolean[r.getTransicionesSensibilizadas().length];
     }
 
     private boolean[] quienesEstan(){
@@ -62,7 +67,7 @@ public class Monitor implements MonitorInterface {
                 enCola = quienesEstan();
                 if(disponibles()) {
                     transicion = politica.elegirTransicion(disp);
-                    cola[transicion].release();
+                    //cola[transicion].release();
                     Thread.currentThread().notify();
                 }
                 else{
@@ -71,10 +76,11 @@ public class Monitor implements MonitorInterface {
             } else {    //k == false
                 mutex.release();
                 try {
-                    cola[t].acquire();
-                    Thread.currentThread().wait();
+                    //cola[t].acquire();
+                    System.out.println("Hilo " + Thread.currentThread().getName() + " en cola de espera");
+                    TimeUnit.MILLISECONDS.sleep(500);
                 } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
+                    e.printStackTrace();
                 }
                 return false;
             }

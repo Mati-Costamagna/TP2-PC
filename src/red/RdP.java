@@ -12,13 +12,18 @@ public class RdP {
         this.matrizIncidencia  = matrizI;
         transicionesSensibilizadas = new boolean[matrizI.length];
         setTransicionesSensibilizadas();
-
     }
 
-    private void setTransicionesSensibilizadas(){
-        for (int i = 0; i < this.matrizIncidencia.length; i++) {
-            for (int j = 0; j < this.matrizIncidencia[i].length; j++) {
-                transicionesSensibilizadas[j] = (marcado[i] > 0) && (matrizIncidencia[i][j] == -1);
+    private synchronized void setTransicionesSensibilizadas(){
+        for (int i = 0; i < this.matrizIncidencia.length; i++) { //columnas
+            for (int j = 0; j < this.matrizIncidencia[i].length; j++) { //filas
+                if (matrizIncidencia[j][i] == -1){
+                    if(marcado[j] < 1){
+                        transicionesSensibilizadas[i] = false;
+                        break;
+                    }
+                    transicionesSensibilizadas[i] = true;
+                }
             }
         }
     }
