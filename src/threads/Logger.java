@@ -1,5 +1,7 @@
 package main.threads;
 
+import main.politicas.PoliticaInterface;
+
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -9,129 +11,108 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Logger extends Thread {
-    // Flag to signal the logger thread to stop processing new items
-    private final AtomicBoolean shouldStop = new AtomicBoolean(false);
-    // Queue to hold incoming transition log messages
-    private final BlockingQueue<String> transiciones = new LinkedBlockingQueue<>();
+    private final AtomicBoolean finalizar = new AtomicBoolean(false);
+    private final BlockingQueue<String> transiciones = new LinkedBlockingQueue<>(); // Cola para mantener los mensajes de registro de transiciones entrantes
     private BufferedWriter writer;
+    private final String politica;
 
-    // Sequences to specifically monitor, as requested by the user.
-    // Only these sequences will be verified and counted.
-    private final List<String> secuencia5_6 = Arrays.asList("5", "6");
-    private final List<String> secuencia2_3_4 = Arrays.asList("2", "3", "4");
-    private final List<String> secuencia7_8_9_10 = Arrays.asList("7", "8", "9", "10");
+    // Invariantes a monitorear
+    private final List<String> complejidadSimple = Arrays.asList("5", "6");
+    private final List<String> complejidadMedia = Arrays.asList("2", "3", "4");
+    private final List<String> complejidadAlta = Arrays.asList("7", "8", "9", "10");
 
-
-    // Counters for the occurrences of the specified sequences
-    private int countSecuencia5_6 = 0;
-    private int countSecuencia2_3_4 = 0;
-    private int countSecuencia7_8_9_10 = 0;
+    private int contSimple = 0;
+    private int contMedia = 0;
+    private int contAlta = 0;
 
 
-    public Logger() {
+    public Logger(PoliticaInterface p) {
+        this.politica = p.getClass().getSimpleName();
         try {
-            // Initialize BufferedWriter to write logs to a file
             this.writer = new BufferedWriter(new FileWriter("log_estadisticas.txt"));
         } catch (IOException e) {
-            System.err.println("Error creating log file: " + e.getMessage());
+            System.err.println("Error al crear el archivo de registro: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
-    /**
-     * Logs a transition by adding its index to the queue.
-     * @param transicion The integer index of the transition fired.
-     */
     public void logTransicion(int transicion) {
-        if (!shouldStop.get()) { // Only log if not explicitly told to stop
-            transiciones.offer(String.valueOf(transicion)); // Non-blocking add to the queue, convert int to String
+        if (!finalizar.get()) { // Solo registrar si no se ha indicado explícitamente que se detenga
+            transiciones.offer(String.valueOf(transicion)); // Añadir a la cola sin bloqueo, convertir int a String
         }
     }
 
-    /**
-     * Signals the logger thread to stop processing new messages.
-     * It also interrupts the thread to unblock it if it's currently waiting on the queue.
-     */
-    public void signalStop() {
-        shouldStop.set(true);
-        this.interrupt(); // Interrupt to unblock from transiciones.take() if it's waiting
+    public void finalizarLogger() {
+        finalizar.set(true);
+        this.interrupt(); // Interrumpir para desbloquear de transiciones.take() si está esperando
     }
 
-    /**
-     * Checks if the total count of the *new* specific sequences has reached the maximum threshold (200).
-     * This method is used by other threads (e.g., Transiciones) to decide when to stop.
-     * @return true if the total count is 200 or more, false otherwise.
-     */
-    public boolean hasReachedMaxInvariants() {
-        // The stopping condition now considers the sum of the new sequence counts.
-        return (countSecuencia5_6 + countSecuencia2_3_4 + countSecuencia7_8_9_10) >= 200;
+    public boolean alcanzoCantMaxInvariantes() {
+        // La condición de parada considera la suma de los conteos de todos los invariantes.
+        return (contSimple + contMedia + contAlta) >= 200;
     }
 
     @Override
     public void run() {
-        // The buffer size should be large enough to accommodate the longest sequence we are checking.
-        // The longest new sequence is secuencia7_8_9_10 with length 4.
-        LinkedList<String> buffer = new LinkedList<>(); // Sliding window buffer for invariant checks
+        // El tamaño del buffer debe ser lo suficientemente grande para que entre la secuencia más larga que estamos verificando.
+        // La secuencia más larga es complejidadAlta con una longitud de 4.
+        LinkedList<String> buffer = new LinkedList<>(); // Búfer de ventana deslizante para verificaciones de invariantes
         try {
-            // Loop as long as we haven't reached the max invariant count AND
-            // (we are not explicitly told to stop OR there are still items in the queue to process).
-            // This ensures all buffered items are processed before exiting after a stop signal.
-            while (!hasReachedMaxInvariants() && (!shouldStop.get() || !transiciones.isEmpty())) {
+            // Repetir mientras no se haya alcanzado el conteo máximo de invariantes Y
+            // (no se haya indicado explícitamente detenerse O todavía haya elementos en la cola para procesar).
+            while (!alcanzoCantMaxInvariantes() && (!finalizar.get() || !transiciones.isEmpty())) {
                 String transicion;
                 try {
-                    if (shouldStop.get()) {
-                        // If stopping, use poll() to retrieve existing items without blocking
+                    if (finalizar.get()) {
+                        // Si se está deteniendo, usar poll() para recuperar elementos existentes sin bloqueo
                         transicion = transiciones.poll();
                         if (transicion == null) {
-                            // If queue is empty and we should stop, break the loop
                             break;
                         }
                     } else {
-                        // Otherwise, block until a new transition message arrives
+                        // De lo contrario, bloquear hasta que llegue un nuevo mensaje de transición
                         transicion = transiciones.take();
                     }
                 } catch (InterruptedException e) {
-                    // If interrupted, it's usually a signal to stop. Set flag and re-interrupt.
-                    shouldStop.set(true);
-                    Thread.currentThread().interrupt(); // Restore interrupted status
-                    continue; // Re-evaluate loop condition to drain remaining queue items
+                    // Si se interrumpe, generalmente es una señal para detenerse. Establecer bandera y reinterrumpir.
+                    finalizar.set(true);
+                    Thread.currentThread().interrupt(); // Restaurar el estado de interrupción
+                    continue; // Reevaluar la condición del bucle para vaciar los elementos restantes de la cola
                 }
 
-                // Write the transition to the log file
                 writer.write(transicion + "\n");
 
-                // Add to buffer and maintain sliding window size.
-                // Max length of new sequences is 4 (secuencia7_8_9_10).
+                // Añadir al búfer y mantener el tamaño de la ventana deslizante.
                 buffer.add(transicion);
                 if (buffer.size() > 4) {
                     buffer.removeFirst();
                 }
 
-                // Check for occurrences of the only desired sequences
-                if (buffer.size() >= secuencia5_6.size()) {
-                    if (buffer.subList(buffer.size() - secuencia5_6.size(), buffer.size()).equals(secuencia5_6)) {
-                        countSecuencia5_6++;
-                        System.out.println("Sequence {5,6} detected! Count: " + countSecuencia5_6);
+                // Verificar las ocurrencias de las secuencias deseadas
+                if (buffer.size() >= complejidadSimple.size()) {
+                    if (buffer.subList(buffer.size() - complejidadSimple.size(), buffer.size()).equals(complejidadSimple)) {
+                        contSimple++;
+                        System.out.println("Invariante Complejidad Simple detectado. Cuenta: " + contSimple);
                     }
                 }
-                if (buffer.size() >= secuencia2_3_4.size()) {
-                    if (buffer.subList(buffer.size() - secuencia2_3_4.size(), buffer.size()).equals(secuencia2_3_4)) {
-                        countSecuencia2_3_4++;
-                        System.out.println("Sequence {2,3,4} detected! Count: " + countSecuencia2_3_4);
+                if (buffer.size() >= complejidadMedia.size()) {
+                    if (buffer.subList(buffer.size() - complejidadMedia.size(), buffer.size()).equals(complejidadMedia)) {
+                        contMedia++;
+                        System.out.println("Invariante Complejidad Media detectado. Cuenta: " + contMedia);
                     }
                 }
-                if (buffer.size() >= secuencia7_8_9_10.size()) {
-                    if (buffer.subList(buffer.size() - secuencia7_8_9_10.size(), buffer.size()).equals(secuencia7_8_9_10)) {
-                        countSecuencia7_8_9_10++;
-                        System.out.println("Sequence {7,8,9,10} detected! Count: " + countSecuencia7_8_9_10);
+                if (buffer.size() >= complejidadAlta.size()) {
+                    if (buffer.subList(buffer.size() - complejidadAlta.size(), buffer.size()).equals(complejidadAlta)) {
+                        contAlta++;
+                        System.out.println("Invariante Complejidad Alta detectado. Cuenta: " + contAlta);
                     }
                 }
             }
         } catch (IOException e) {
-            System.err.println("Error writing to log file: " + e.getMessage());
+            System.err.println("Error escribiendo el logger: " + e.getMessage());
             e.printStackTrace();
         } finally {
-            // Ensure all remaining items in the queue are written to the file before closing
+            // Asegurarse de que todos los elementos restantes en la cola se escriban en el archivo antes de cerrar
             while (!transiciones.isEmpty()) {
                 try {
                     String remainingTrans = transiciones.poll();
@@ -139,20 +120,22 @@ public class Logger extends Thread {
                         writer.write(remainingTrans + "\n");
                     }
                 } catch (IOException e) {
-                    System.err.println("Error writing remaining logs: " + e.getMessage());
+                    System.err.println("Error escribiendo logs restantes: " + e.getMessage());
                     e.printStackTrace();
                 }
             }
-            // Write final counts of only the desired sequences to the file and close the writer
+            // Escribir los conteos finales de solo las secuencias deseadas en el archivo y cerrar el logger
             try {
-                writer.write("--- Final Sequence Counts ---\n");
-                writer.write("Secuencia {5,6}: " + countSecuencia5_6 + "\n");
-                writer.write("Secuencia {2,3,4}: " + countSecuencia2_3_4 + "\n");
-                writer.write("Secuencia {7,8,9,10}: " + countSecuencia7_8_9_10 + "\n");
+                writer.write("Politica implementada: " + politica + "\n");
+                writer.write("--- Cuenta final Invariantes ---\n");
+                writer.write("Complejidad Simple: " + contSimple + "\n");
+                writer.write("Complejidad Media: " + contMedia + "\n");
+                writer.write("Complejidad Alta: " + contAlta + "\n");
+                writer.write("Invariantes Totales: " + (contSimple + contMedia + contAlta) + "\n");
                 writer.close();
-                System.out.println("Log file 'log_estadisticas.txt' closed. Final counts written.");
+                System.out.println("Logger 'log_estadisticas.txt' cerrado. Cuenta final escrita.");
             } catch (IOException e) {
-                System.err.println("Error closing log file or writing final counts: " + e.getMessage());
+                System.err.println("Error cerrando logger o escribiendo cuenta final: " + e.getMessage());
                 e.printStackTrace();
             }
         }

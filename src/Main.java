@@ -11,21 +11,22 @@ public class Main {
     public static void main(String[] args) throws InterruptedException {
 
         int[] marcadoInicial = {3, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0};
-        int [][] matrizI = {{-1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-                {1, -1, 0,  0,  0,  0,  0,  0,  0,  0,  0,  0},
-                {-1,1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0},
-                {0, 1,  -1, 0,  0,  -1, 0,  -1, 0,  0,  0,  0},
-                {0, 0,  1,  -1,  0,  0, 0,  0,  0,  0,  0,  0},
-                {0, 0,  0,  1,  -1, 0,  0,  0,  0,  0,  0,  0},
-                {0, 0,  -1, 0,  1,  -1, 1,  -1, 0,  0,  1,  0},
-                {0, 0,  0,  0,  0,  1,  -1, 0,  0,  0,  0,  0},
-                {0, 0,  0,  0,  0,  0,  0,  1,  -1, 0,  0,  0},
-                {0, 0,  0,  0,  0,  0,  0,  0,  1,  -1, 0,  0},
-                {0, 0,  0,  0,  0,  0,  0,  0,  0,  1,  -1, 0},
-                {0, 0,  0,  0,  1,  0,  1,  0,  0,  0,  1,  -1},
+        int [][] matrizI = {
+                {-1, 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1},
+                {1, -1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0},
+                {-1, 1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0},
+                {0,  1, -1,  0,  0, -1,  0, -1,  0,  0,  0,  0},
+                {0,  0,  1, -1,  0,  0,  0,  0,  0,  0,  0,  0},
+                {0,  0,  0,  1, -1,  0,  0,  0,  0,  0,  0,  0},
+                {0,  0, -1,  0,  1, -1,  1, -1,  0,  0,  1,  0},
+                {0,  0,  0,  0,  0,  1, -1,  0,  0,  0,  0,  0},
+                {0,  0,  0,  0,  0,  0,  0,  1, -1,  0,  0,  0},
+                {0,  0,  0,  0,  0,  0,  0,  0,  1, -1,  0,  0},
+                {0,  0,  0,  0,  0,  0,  0,  0,  0,  1, -1,  0},
+                {0,  0,  0,  0,  1,  0,  1,  0,  0,  0,  1, -1},
         };
 
-        int[][] modoProcesamiento = {{0, 1},
+        int[][] responsabilidadesHilos = {{0, 1},
                 {5, 6},
                 {2, 3, 4},
                 {7, 8, 9, 10},
@@ -34,26 +35,24 @@ public class Main {
 
         // Inicialización de la Red de Petri, la política y el monitor
         RdP red = new RdP(matrizI,marcadoInicial);
-        PoliticaInterface politica = new PoliticaAleatoria(); // Puedes cambiar a PoliticaPrioritaria() si lo deseas
+        PoliticaInterface politica = new PoliticaPrioritaria(); // o PoliticaPrioritaria()
         Monitor monitor = new Monitor(red, politica);
 
         // Inicialización del Logger y su hilo
-        Logger logger = new Logger();
+        Logger logger = new Logger(politica);
         logger.start(); // Inicia el hilo del logger
 
-        // Creación y arranque de los hilos de transiciones
-        Thread[] transicionesThreads = new Thread[modoProcesamiento.length];
+        // Creación y start de los hilos de transiciones
+        Thread[] transicionesThreads = new Thread[responsabilidadesHilos.length];
         for (int i = 0; i < transicionesThreads.length; i++) {
-            transicionesThreads[i] = new Transiciones(monitor, modoProcesamiento[i], logger);
+            transicionesThreads[i] = new Transiciones(monitor, responsabilidadesHilos[i], logger);
             transicionesThreads[i].start();
         }
 
-        // Dar un tiempo al logger para procesar todos los elementos de la cola
         System.out.println("Esperando a que el logger termine de procesar...");
-        Thread.sleep(1000); // Espera 1 segundo para asegurar que la cola se procesa
-        // Señaliza al logger para que se detenga
-        logger.signalStop();
-        // Espera a que el hilo del logger termine
+        Thread.sleep(1000);
+
+        logger.finalizarLogger();
         logger.join();
         // Interrumpe y espera a que los hilos de transiciones terminen
         for (Thread t : transicionesThreads) {
@@ -62,7 +61,7 @@ public class Main {
                 t.join();
             } catch (InterruptedException e) {
                 System.err.println("Hilo de transición interrumpido al finalizar: " + e.getMessage());
-                Thread.currentThread().interrupt(); // Restaura el estado de interrupción
+                Thread.currentThread().interrupt();
             }
         }
         System.out.println("\n--- Ejecución terminada. Revisa 'log_estadisticas.txt' para los resultados ---");

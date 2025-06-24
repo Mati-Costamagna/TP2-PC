@@ -3,68 +3,43 @@ package main.monitor;
 
 import main.politicas.PoliticaInterface;
 import main.red.RdP;
-import main.threads.Transiciones;
-
-import java.sql.Time;
-import java.util.ArrayList;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 
 public class Monitor implements MonitorInterface {
-    private RdP red;
-    private boolean[] sensibilizadas;
-    private boolean[] enCola;
-    private boolean[] disp;
-    private int transicion;
-    private Semaphore mutex;
-    private Semaphore[] cola;
-    private PoliticaInterface politica;
+    private final RdP red;
+    private final Semaphore mutex = new Semaphore(1);
+    private final Semaphore[] colaCondicion;
+    private final PoliticaInterface politica;
 
     public Monitor(RdP r, PoliticaInterface p) {
         red = r;
-        mutex =  new Semaphore(1);
-        cola = new Semaphore[r.getTransicionesSensibilizadas().length];
-        for(int i = 0; i < r.getTransicionesSensibilizadas().length; i++){
-            cola[i] = new Semaphore(0);
-        }
         politica = p;
-        sensibilizadas =  new boolean[r.getTransicionesSensibilizadas().length];
-        enCola = new boolean[r.getTransicionesSensibilizadas().length];
-        disp = new boolean[r.getTransicionesSensibilizadas().length];
+        colaCondicion = new Semaphore[r.getTransicionesSensibilizadas().length];
+        for(int i = 0; i < r.getTransicionesSensibilizadas().length; i++){
+            colaCondicion[i] = new Semaphore(0);
+        }
     }
 
-    private boolean disponibles() {
-        for (int i = 0; i < sensibilizadas.length; i++) {
-            disp[i] = sensibilizadas[i] && cola[i].hasQueuedThreads();
+    private boolean[] disponibles() {
+        boolean[] disponiblesParaDisparar = new boolean[red.getTransicionesSensibilizadas().length];
+        for (int i = 0; i < red.getTransicionesSensibilizadas().length; i++) {
+            disponiblesParaDisparar[i] = red.getTransicionesSensibilizadas()[i] && colaCondicion[i].hasQueuedThreads();
         }
-        for (boolean b : disp) {
-            if (b) return true;
-        }
-        return false;
+        return  disponiblesParaDisparar;
     }
 
     @Override
-    public boolean fireTransition(int t) {
+    public boolean fireTransition(int transition) {
         boolean k = false;
         while (!k) {
             try {
                 mutex.acquire();
-                sensibilizadas = red.getTransicionesSensibilizadas();
-                if (sensibilizadas[t]) {
-                    k = red.disparar(t);
-                    sensibilizadas = red.getTransicionesSensibilizadas();
-//                     Wake up a waiting thread if any transition is now enabled
-                    boolean hay = disponibles();
-                    if(hay) {
-                        transicion = politica.elegirTransicion(disp);
-                        if (transicion != -1) {
-                            cola[transicion].release();
-                            break; // Wake up the thread waiting for this transition
-                        }
-                    }
+                if (red.getTransicionesSensibilizadas()[transition]) {
+                    k = red.disparar(transition);
+                    colaCondicion[politica.elegirTransicion(disponibles())].release();
                 } else {
                     mutex.release();
-                    cola[t].acquire(); // Wait until this transition is enabled
+                    colaCondicion[transition].acquire(); // Espera aqui hasta que la transicion este sensibilizada
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();

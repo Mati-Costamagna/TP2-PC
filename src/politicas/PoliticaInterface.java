@@ -1,6 +1,6 @@
 package main.politicas;
 
 public interface PoliticaInterface {
-    int elegirTransicion(boolean[] transicion);
+    int elegirTransicion(boolean[] transiciones);
 }
 
