@@ -14,7 +14,7 @@ public class RdP {
         setTransicionesSensibilizadas();
     }
 
-    private synchronized void setTransicionesSensibilizadas(){
+    private void setTransicionesSensibilizadas(){
         for (int i = 0; i < this.matrizIncidencia.length; i++) { //columnas
             for (int j = 0; j < this.matrizIncidencia[i].length; j++) { //filas
                 if (matrizIncidencia[j][i] == -1){

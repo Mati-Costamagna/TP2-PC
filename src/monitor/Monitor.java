@@ -17,7 +17,6 @@ public class Monitor implements MonitorInterface {
     private boolean[] disp;
     private int transicion;
     private Semaphore mutex;
-    private boolean k;
     private Semaphore[] cola;
     private PoliticaInterface politica;
 
@@ -26,7 +25,7 @@ public class Monitor implements MonitorInterface {
         mutex =  new Semaphore(1);
         cola = new Semaphore[r.getTransicionesSensibilizadas().length];
         for(int i = 0; i < r.getTransicionesSensibilizadas().length; i++){
-            cola[i] = new Semaphore(1);
+            cola[i] = new Semaphore(0);
         }
         politica = p;
         sensibilizadas =  new boolean[r.getTransicionesSensibilizadas().length];
@@ -34,16 +33,9 @@ public class Monitor implements MonitorInterface {
         disp = new boolean[r.getTransicionesSensibilizadas().length];
     }
 
-    private boolean[] quienesEstan(){
-        for(int i = 0; i < cola.length; i++){
-            enCola[i] = cola[i].availablePermits() == 0;
-        }
-        return enCola;
-    }
-
     private boolean disponibles() {
         for (int i = 0; i < sensibilizadas.length; i++) {
-            disp[i] = sensibilizadas[i] && enCola[i] ;
+            disp[i] = sensibilizadas[i] && cola[i].hasQueuedThreads();
         }
         for (boolean b : disp) {
             if (b) return true;
@@ -52,41 +44,37 @@ public class Monitor implements MonitorInterface {
     }
 
     @Override
-    public synchronized boolean fireTransition(int t) {
-        try{
-            mutex.acquire();
-            k = true;
-        } catch (InterruptedException e){
-            e.printStackTrace();
-        }
-
-        while(k) {
-            k = red.disparar(t);
-            if (k) {       //k == true
+    public boolean fireTransition(int t) {
+        boolean k = false;
+        while (!k) {
+            try {
+                mutex.acquire();
                 sensibilizadas = red.getTransicionesSensibilizadas();
-                enCola = quienesEstan();
-                if(disponibles()) {
-                    transicion = politica.elegirTransicion(disp);
-                    //cola[transicion].release();
-                    Thread.currentThread().notify();
+                if (sensibilizadas[t]) {
+                    k = red.disparar(t);
+                    sensibilizadas = red.getTransicionesSensibilizadas();
+//                     Wake up a waiting thread if any transition is now enabled
+                    boolean hay = disponibles();
+                    if(hay) {
+                        transicion = politica.elegirTransicion(disp);
+                        if (transicion != -1) {
+                            cola[transicion].release();
+                            break; // Wake up the thread waiting for this transition
+                        }
+                    }
+                } else {
+                    mutex.release();
+                    cola[t].acquire(); // Wait until this transition is enabled
                 }
-                else{
-                    k = false;
-                }
-            } else {    //k == false
-                mutex.release();
-                try {
-                    //cola[t].acquire();
-                    System.out.println("Hilo " + Thread.currentThread().getName() + " en cola de espera");
-                    TimeUnit.MILLISECONDS.sleep(500);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
                 return false;
+            } finally {
+                if (mutex.availablePermits() == 0) {
+                    mutex.release();
+                }
             }
         }
-        mutex.release();
         return true;
     }
-
 }
