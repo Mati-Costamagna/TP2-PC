@@ -62,7 +62,7 @@ public class Monitor implements MonitorInterface {
                     }
                 } else{
                     mutex.release();
-                    red.dormir();
+                    red.dormir(transition);
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();

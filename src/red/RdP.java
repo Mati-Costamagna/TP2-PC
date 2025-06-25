@@ -25,11 +25,13 @@ public class RdP {
     }
 
     private synchronized void setTransicionesSensibilizadas() {
+        boolean [] sensibilizadasViejas = getTransicionesSensibilizadas();
         for (int t = 0; t < this.matrizIncidencia[0].length; t++) {
             for (int p = 0; p < this.matrizIncidencia.length; p++) {
                 if (matrizIncidencia[p][t] == -1) {
                     if (marcado[p] < 1) {
                         transicionesSensibilizadas[t] = false;
+                        timestamps[t] = 0; // Resetear timestamp si no hay marcado suficiente
                         break;
                     }
                 }
@@ -37,7 +39,7 @@ public class RdP {
             this.transicionesSensibilizadas[t] = true;
 
             // Si la transición se acaba de sensibilizar (flanco ascendente), se setea el timestamp
-            if (this.transicionesSensibilizadas[t] ) {
+            if (this.transicionesSensibilizadas[t] && !sensibilizadasViejas[t]) {
                 this.timestamps[t] = System.currentTimeMillis();
             }
         }
@@ -136,7 +138,7 @@ public class RdP {
         }
     }
 
-    public void dormir(){
+    public void dormir(int t){
         boolean antes = antesVentana(t);
         if(antes){
             setEsperando(t);
