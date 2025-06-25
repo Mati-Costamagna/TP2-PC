@@ -1,65 +1,150 @@
 package main.red;
 
+import java.sql.Time;
+import java.util.Arrays;
+
 public class RdP {
 
     private int[] marcado;
     private final int[][] matrizIncidencia;
-    private final boolean[] transicionesSensibilizadas;
+    private boolean[] transicionesSensibilizadas;
+    private final long[] alpha;
+    private final long[] beta;
+    private final long[] timestamps;
+    private final boolean[] esperando;
 
-    public RdP(int[][] matrizI, int[] marcadoInicial) {
+    public RdP(int[][] matrizI, int[] marcadoInicial,long[]alpha,long[] beta) {
         this.marcado = marcadoInicial;
         this.matrizIncidencia = matrizI;
-        transicionesSensibilizadas = new boolean[matrizI.length];
+        this.alpha = alpha;
+        this.beta = beta;
+        this.timestamps = new long[alpha.length];
+        this.transicionesSensibilizadas = new boolean[matrizI.length];
+        this.esperando = new boolean[matrizI.length];
         setTransicionesSensibilizadas();
     }
 
     private synchronized void setTransicionesSensibilizadas() {
-        for (int i = 0; i < this.matrizIncidencia.length; i++) { //columnas
-            for (int j = 0; j < this.matrizIncidencia[i].length; j++) { //filas
-                if (matrizIncidencia[j][i] == -1) {
-                    if (marcado[j] < 1) {
-                        transicionesSensibilizadas[i] = false;
+        for (int t = 0; t < this.matrizIncidencia[0].length; t++) {
+            for (int p = 0; p < this.matrizIncidencia.length; p++) {
+                if (matrizIncidencia[p][t] == -1) {
+                    if (marcado[p] < 1) {
+                        transicionesSensibilizadas[t] = false;
                         break;
                     }
-                    transicionesSensibilizadas[i] = true;
                 }
+            }
+            this.transicionesSensibilizadas[t] = true;
+
+            // Si la transición se acaba de sensibilizar (flanco ascendente), se setea el timestamp
+            if (this.transicionesSensibilizadas[t] ) {
+                this.timestamps[t] = System.currentTimeMillis();
             }
         }
     }
 
     private boolean invariantesPlaza() {
-        if ((marcado[0] + marcado[1] + marcado[3] + marcado[4] + marcado[5] + marcado[7] + marcado[8] + marcado[9] + marcado[10] + marcado[11]) != 3) {
-            System.out.println("Invariante 1");
-            return false;
-        } else if (((marcado[1] + marcado[2]) != 1)) {
-            System.out.println("Invariante 2");
-            return false;
-        } else if ((marcado[4] + marcado[5] + marcado[6] + marcado[7] + marcado[8] + marcado[9] + marcado[10]) != 1){
-            System.out.println("Invariante 3");
+        boolean invariante1 =(marcado[0] + marcado[1] + marcado[3] + marcado[4] + marcado[5] + marcado[7] + marcado[8] + marcado[9] + marcado[10] + marcado[11]) != 3;
+        boolean invariante2 =((marcado[1] + marcado[2]) != 1);
+        boolean invariante3 =((marcado[4] + marcado[5] + marcado[6] + marcado[7] + marcado[8] + marcado[9] + marcado[10]) != 1);
+        if (invariante1) {
+            System.out.println("Invariante 1 no se cumple");
             return false;
         }
-        return (marcado[0] + marcado[1] + marcado[3] + marcado[4] + marcado[5] + marcado[7] + marcado[8] + marcado[9] + marcado[10] + marcado[11]) == 3 &&
-                ((marcado[1] + marcado[2]) == 1) &&
-                ((marcado[4] + marcado[5] + marcado[6] + marcado[7] + marcado[8] + marcado[9] + marcado[10]) == 1);
+        else if (invariante2) {
+            System.out.println("Invariante 2 no se cumple");
+            return false;
+        }
+        else if (invariante3){
+            System.out.println("Invariante 3 no se cumple");
+            return false;
+        }
+        return invariante1 && invariante2 && invariante3;
+    }
+
+    private long getTimeToWait(int transition) {
+        if (alpha[transition] == 0) { // Transición no temporal
+            return 0;
+        }
+
+        long now = System.currentTimeMillis();
+        long timestamp = timestamps[transition];
+
+        if (now < timestamp + alpha[transition]) { // Antes de la ventana
+            return (timestamp + alpha[transition]) - now;
+        }
+
+        if (now > timestamp + beta[transition]) { // Después de la ventana (demasiado tarde)
+            System.out.println("Transicion " + transition + " pasada de tiempo. BETA");
+            return -1; // Indica que se pasó la ventana
+        }
+
+        return 0; // Dentro de la ventana, listo para disparar
+    }
+    private boolean testVentanaTiempo(int t) {
+        if (getTimeToWait(t) == 0) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+    public void setEsperando(int t) {
+        esperando[t] = true;
+    }
+    public void setLiberado(int t){
+        esperando[t] = false;
+    }
+
+    private boolean antesVentana(int t) {
+        return (getTimeToWait(t) > 0);
+    }
+
+    public boolean disparar(int t) {
+        return actualizarEstadoRed(t);
+    }
+
+    private boolean actualizarEstadoRed(int t){
+        int[] marcadoAnterior = marcado.clone();
+        for (int i = 0; i < this.matrizIncidencia.length; i++) {
+            marcado[i] = marcado[i] + matrizIncidencia[i][t];
+        }
+        if (!invariantesPlaza()) {
+            marcado = marcadoAnterior.clone();
+            System.out.println("No se cumple la invariante de plaza, revirtiendo el marcado.");
+            return false;
+        }
+        setTransicionesSensibilizadas();
+        return true;
     }
 
     public boolean[] getTransicionesSensibilizadas() {
         return transicionesSensibilizadas;
     }
 
-    public boolean disparar(int t) {
-        int[] marcadoAnterior = marcado.clone();
-
-            for (int i = 0; i < this.matrizIncidencia.length; i++) {
-                marcado[i] = marcado[i] + matrizIncidencia[i][t];
+    public boolean estaSensibilizado(int t) {
+        boolean vent = testVentanaTiempo(t);
+        if (vent) {
+            if (!esperando[t]) {
+                timestamps[t] = System.currentTimeMillis();
+                return true;
+            } else {
+                return false;
             }
-            if (!invariantesPlaza()) {
-                marcado = marcadoAnterior.clone(); // Revertir el marcado si no se cumple la invariante de plaza
-                System.out.println("No se cumple la invariante de plaza, revirtiendo el marcado.");
-                return false; // No se cumple la invariante de plaza, no se dispara la transición
-            }
-            setTransicionesSensibilizadas();
-            return true;
+        } else {
+            return false;
+        }
+    }
 
+    public void dormir(){
+        boolean antes = antesVentana(t);
+        if(antes){
+            setEsperando(t);
+            try {
+                Thread.sleep(getTimeToWait(t));
+            }catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }
