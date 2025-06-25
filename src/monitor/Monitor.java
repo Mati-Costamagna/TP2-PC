@@ -1,8 +1,9 @@
 package main.monitor;
 
-
 import main.politicas.PoliticaInterface;
 import main.red.RdP;
+
+import java.util.Arrays;
 import java.util.concurrent.Semaphore;
 
 public class Monitor implements MonitorInterface {
@@ -28,6 +29,7 @@ public class Monitor implements MonitorInterface {
         return  disponiblesParaDisparar;
     }
 
+
     @Override
     public boolean fireTransition(int transition) {
         boolean k = false;
@@ -36,10 +38,16 @@ public class Monitor implements MonitorInterface {
                 mutex.acquire();
                 if (red.getTransicionesSensibilizadas()[transition]) {
                     k = red.disparar(transition);
-                    colaCondicion[politica.elegirTransicion(disponibles())].release();
-                } else {
-                    mutex.release();
-                    colaCondicion[transition].acquire(); // Espera aqui hasta que la transicion este sensibilizada
+                    if(k){
+                        if(hayDisponibles()){
+                            colaCondicion[politica.elegirTransicion(disponibles())].release();
+                        }else{
+                            k = false;
+                        }
+                    } else {
+                        mutex.release();
+                        colaCondicion[transition].acquire(); // Espera aqui hasta que la transicion este sensibilizada
+                    }
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -51,5 +59,16 @@ public class Monitor implements MonitorInterface {
             }
         }
         return true;
+    }
+    
+    private boolean hayDisponibles() {
+        boolean hayDisponibles = false;
+        for (boolean c : disponibles()) {
+            if (c) {
+                hayDisponibles = true;
+                break;
+            }
+        }
+        return hayDisponibles;
     }
 }

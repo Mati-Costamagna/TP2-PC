@@ -26,7 +26,7 @@ public class Main {
                 {0,  0,  0,  0,  1,  0,  1,  0,  0,  0,  1, -1},
         };
 
-        int[][] responsabilidadesHilos = {{0, 1},
+        int[][] segmentos = {{0, 1},
                 {5, 6},
                 {2, 3, 4},
                 {7, 8, 9, 10},
@@ -34,7 +34,7 @@ public class Main {
         };
 
         // Inicialización de la Red de Petri, la política y el monitor
-        RdP red = new RdP(matrizI,marcadoInicial);
+         RdP red = new RdP(matrizI,marcadoInicial);
         PoliticaInterface politica = new PoliticaPrioritaria(); // o PoliticaPrioritaria()
         Monitor monitor = new Monitor(red, politica);
 
@@ -43,17 +43,19 @@ public class Main {
         logger.start(); // Inicia el hilo del logger
 
         // Creación y start de los hilos de transiciones
-        Thread[] transicionesThreads = new Thread[responsabilidadesHilos.length];
+        Thread[] transicionesThreads = new Thread[segmentos.length];
         for (int i = 0; i < transicionesThreads.length; i++) {
-            transicionesThreads[i] = new Transiciones(monitor, responsabilidadesHilos[i], logger);
+            transicionesThreads[i] = new Transiciones(monitor, segmentos[i], logger);
             transicionesThreads[i].start();
         }
 
         System.out.println("Esperando a que el logger termine de procesar...");
-        Thread.sleep(1000);
-
+        while(!logger.alcanzoCantMaxInvariantes()) {
+            // Espera activa hasta que se alcancen las condiciones de parada
+            Thread.sleep(1000);
+        }
         logger.finalizarLogger();
-        logger.join();
+
         // Interrumpe y espera a que los hilos de transiciones terminen
         for (Thread t : transicionesThreads) {
             t.interrupt();
@@ -64,6 +66,7 @@ public class Main {
                 Thread.currentThread().interrupt();
             }
         }
+        logger.join();
         System.out.println("\n--- Ejecución terminada. Revisa 'log_estadisticas.txt' para los resultados ---");
     }
 }
