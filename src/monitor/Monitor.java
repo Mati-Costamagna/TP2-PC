@@ -11,6 +11,7 @@ public class Monitor implements MonitorInterface {
     private final Semaphore mutex = new Semaphore(1);
     private final Semaphore[] colaCondicion;
     private final PoliticaInterface politica;
+    private final Object lock = new Object();
 
     public Monitor(RdP r, PoliticaInterface p) {
         red = r;
@@ -24,16 +25,26 @@ public class Monitor implements MonitorInterface {
     private boolean[] disponibles() {
         boolean[] disponiblesParaDisparar = new boolean[red.getTransicionesSensibilizadas().length];
         for (int i = 0; i < red.getTransicionesSensibilizadas().length; i++) {
-            disponiblesParaDisparar[i] = red.getTransicionesSensibilizadas()[i] && colaCondicion[i].hasQueuedThreads();
+            disponiblesParaDisparar[i] = red.getTransicionesSensibilizadas()[i] && (colaCondicion[i].getQueueLength() > 0);
         }
         return  disponiblesParaDisparar;
     }
 
+    private boolean hayDisponibles() {
+        boolean hayDisponibles = false;
+        for (boolean c : disponibles()) {
+            if (c) {
+                hayDisponibles = true;
+                break;
+            }
+        }
+        return hayDisponibles;
+    }
 
     @Override
     public boolean fireTransition(int transition) {
-        boolean k = false;
-        while (!k) {
+        boolean k = true;
+        while (k) {
             try {
                 mutex.acquire();
                 if (red.getTransicionesSensibilizadas()[transition]) {
@@ -60,15 +71,5 @@ public class Monitor implements MonitorInterface {
         }
         return true;
     }
-    
-    private boolean hayDisponibles() {
-        boolean hayDisponibles = false;
-        for (boolean c : disponibles()) {
-            if (c) {
-                hayDisponibles = true;
-                break;
-            }
-        }
-        return hayDisponibles;
-    }
+
 }

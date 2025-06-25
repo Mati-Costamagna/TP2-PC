@@ -11,7 +11,8 @@ public class Main {
     public static void main(String[] args) throws InterruptedException {
 
         int[] marcadoInicial = {3, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0};
-        int [][] matrizI = {
+        int[][] matrizI = {
+                // T0  T1  T2  T3  T4  T5  T6  T7  T8  T9 T10 T11
                 {-1, 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1},
                 {1, -1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0},
                 {-1, 1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0},
@@ -35,7 +36,7 @@ public class Main {
 
         // Inicialización de la Red de Petri, la política y el monitor
          RdP red = new RdP(matrizI,marcadoInicial);
-        PoliticaInterface politica = new PoliticaPrioritaria(); // o PoliticaPrioritaria()
+        PoliticaInterface politica = new PoliticaAleatoria(); // o PoliticaPrioritaria()
         Monitor monitor = new Monitor(red, politica);
 
         // Inicialización del Logger y su hilo

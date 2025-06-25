@@ -49,7 +49,7 @@ public class RdP {
 
     public boolean disparar(int t) {
         int[] marcadoAnterior = marcado.clone();
-//        if (transicionesSensibilizadas[t]) {
+
             for (int i = 0; i < this.matrizIncidencia.length; i++) {
                 marcado[i] = marcado[i] + matrizIncidencia[i][t];
             }
@@ -60,7 +60,6 @@ public class RdP {
             }
             setTransicionesSensibilizadas();
             return true;
-//        }
-//        return false;
+
     }
 }
