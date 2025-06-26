@@ -1,5 +1,6 @@
 package main.red;
 
+import javax.sound.midi.SysexMessage;
 import java.sql.Time;
 import java.util.Arrays;
 
@@ -14,20 +15,21 @@ public class RdP {
     private final long[] tiemposEspera;
     private final boolean[] hilosEnEspera;
 
-    public RdP(int[][] matrizI, int[] marcadoInicial,long[]alpha,long[] beta) {
+    public RdP(int[][] matrizI, int[] marcadoInicial, long[] alpha, long[] beta) {
         this.marcado = marcadoInicial;
         this.matrizIncidencia = matrizI;
+        this.transicionesSensibilizadas = new boolean[matrizI.length];
+
         this.alpha = alpha;
         this.beta = beta;
         this.timestamps = new long[alpha.length];
-        this.transicionesSensibilizadas = new boolean[matrizI.length];
         this.hilosEnEspera = new boolean[matrizI.length];
         this.tiemposEspera = new long[matrizI.length];
         setTransicionesSensibilizadas();
     }
 
-    private synchronized void setTransicionesSensibilizadas() {
-        boolean [] sensibilizadasViejas = transicionesSensibilizadas;
+    private void setTransicionesSensibilizadas() {
+        boolean [] sensibilizadasViejas = transicionesSensibilizadas.clone();
         for (int t = 0; t < this.matrizIncidencia[0].length; t++) {
             for (int p = 0; p < this.matrizIncidencia.length; p++) {
                 if (matrizIncidencia[p][t] == -1) {
@@ -96,18 +98,22 @@ public class RdP {
     }
 
     public boolean disparar(int t) {
-        int[] marcadoAnterior = marcado.clone();
-        for (int i = 0; i < this.matrizIncidencia.length; i++) {
-            marcado[i] = marcado[i] + matrizIncidencia[i][t];
-        }
-        if (!invariantesPlaza()) {
-            marcado = marcadoAnterior.clone();
-            System.out.println("No se cumple la invariante de plaza, revirtiendo el marcado.");
+        if(estaSensibilizado(t)) {
+            int[] marcadoAnterior = marcado.clone();
+            for (int i = 0; i < this.matrizIncidencia.length; i++) {
+                marcado[i] = marcado[i] + matrizIncidencia[i][t];
+            }
+            if (!invariantesPlaza()) {
+                marcado = marcadoAnterior.clone();
+                System.out.println("No se cumple la invariante de plaza, revirtiendo el marcado.");
+                return false;
+            }
+            setTransicionesSensibilizadas();
+            setEspera(t,false);
+            return true;
+        }else{
             return false;
         }
-        setTransicionesSensibilizadas();
-        setEspera(t,false);
-        return true;
     }
 
     public boolean[] getTransicionesSensibilizadas() {
@@ -131,15 +137,22 @@ public class RdP {
             if (testVentanaTiempo(t) && transicionesSensibilizadas[t]) {
                 return !esperando(t);
             } else {
-                if (antesDeLaVentana(t) && transicionesSensibilizadas[t]) setEspera(t, true);
+                if (antesDeLaVentana(t) && transicionesSensibilizadas[t]) {
+                    System.out.println("Hilo " + Thread.currentThread().getName() + " antes de la ventana");
+                    setEspera(t, true);
+                }
                 return false;
             }
+        //return getTransicionesSensibilizadas()[t];
     }
 
     public void dormirHilo(int t){
         try {
+            System.out.println("Hilo " + Thread.currentThread().getName() + " mimiendo por " + tiemposEspera[t] + "milisegundos");
             Thread.sleep(tiemposEspera[t]);
+            System.out.println("Hilo " + Thread.currentThread().getName() + " despertado");
         } catch (InterruptedException e) {
+            System.out.println(Thread.currentThread().getName() + " interrumpido");
             e.printStackTrace();
         }
     }

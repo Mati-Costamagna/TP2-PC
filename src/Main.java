@@ -29,7 +29,7 @@ public class Main {
 
         // Configuracion de tiempos (en milisegundos)
         // Transiciones temporales: T1, T3, T4, T6, T8, T9, T10
-        long[] alpha = {0,75,0,75,75,0,75,0,75,75,75,0};
+        long[] alpha = {0,50,0,50,50,0,50,0,50,50,50,0};
         long[] beta = new long[marcadoInicial.length];
 
         // Tiempos Beta (máximos)
@@ -45,7 +45,7 @@ public class Main {
         };
 
         RdP red = new RdP(matrizI, marcadoInicial, alpha, beta);
-        PoliticaInterface politica = new PoliticaAleatoria(); // o PoliticaPrioritaria()
+        PoliticaInterface politica = new PoliticaAleatoria(); //  PoliticaPrioritaria o PoliticaAleatoria
         Monitor monitor = new Monitor(red, politica);
 
         Logger logger = new Logger(politica,inicio);
