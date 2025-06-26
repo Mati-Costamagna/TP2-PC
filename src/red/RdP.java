@@ -19,7 +19,6 @@ public class RdP {
         this.marcado = marcadoInicial;
         this.matrizIncidencia = matrizI;
         this.transicionesSensibilizadas = new boolean[matrizI.length];
-
         this.alpha = alpha;
         this.beta = beta;
         this.timestamps = new long[alpha.length];
@@ -88,11 +87,6 @@ public class RdP {
         return 0; // Dentro de la ventana, listo para disparar
     }
 
-    private void setEspera(int t, boolean estado) {
-        hilosEnEspera[t] = estado;
-        tiemposEspera[t] = tiempoSleep(t);
-    }
-
     private boolean antesDeLaVentana(int t) {
         return (tiempoSleep(t) > 0);
     }
@@ -109,11 +103,16 @@ public class RdP {
                 return false;
             }
             setTransicionesSensibilizadas();
-            setEspera(t,false);
+            setEspera(t, false);
             return true;
         }else{
             return false;
         }
+    }
+
+    private void setEspera(int t, boolean estado) {
+        hilosEnEspera[t] = estado;
+        tiemposEspera[t] = tiempoSleep(t);
     }
 
     public boolean[] getTransicionesSensibilizadas() {
@@ -133,23 +132,33 @@ public class RdP {
         return false;
     }
 
-    public boolean estaSensibilizado(int t){
-            if (testVentanaTiempo(t) && transicionesSensibilizadas[t]) {
-                return !esperando(t);
-            } else {
-                if (antesDeLaVentana(t) && transicionesSensibilizadas[t]) {
-                    System.out.println("Hilo " + Thread.currentThread().getName() + " antes de la ventana");
-                    setEspera(t, true);
-                }
-                return false;
-            }
-        //return getTransicionesSensibilizadas()[t];
+//    public boolean estaSensibilizado(int t){
+//            if (testVentanaTiempo(t) && transicionesSensibilizadas[t]) {
+//                return !esperando(t);
+//            } else {
+//                if (antesDeLaVentana(t) && transicionesSensibilizadas[t]) {
+//                    System.out.println("Hilo " + Thread.currentThread().getName() + " antes de la ventana");
+//                }
+//                return false;
+//            }
+//    }
+
+    public boolean estaSensibilizado(int t) {
+        if (!transicionesSensibilizadas[t]) {
+            return false;
+        } else if (!testVentanaTiempo(t)) {
+            setEspera(t, true);
+            dormirHilo(t);
+            return false;
+        } else {
+            return !esperando(t);
+        }
     }
 
     public void dormirHilo(int t){
         try {
-            System.out.println("Hilo " + Thread.currentThread().getName() + " mimiendo por " + tiemposEspera[t] + "milisegundos");
-            Thread.sleep(tiemposEspera[t]);
+            System.out.println("Hilo " + Thread.currentThread().getName() + " mimiendo por " + tiempoSleep(t) + "milisegundos");
+            Thread.sleep(tiempoSleep(t));
             System.out.println("Hilo " + Thread.currentThread().getName() + " despertado");
         } catch (InterruptedException e) {
             System.out.println(Thread.currentThread().getName() + " interrumpido");

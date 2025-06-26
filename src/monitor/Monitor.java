@@ -39,57 +39,33 @@ public class Monitor implements MonitorInterface {
         return hayDisponibles;
     }
 
-//    @Override
-//    public boolean fireTransition(int transition) {
-//            try {
-//                mutex.acquire();
-//                boolean kMonitor = true;
-//                while (kMonitor) {
-//                    if (red.disparar(transition)) {
-//                        boolean[] disponiblesParaDisparar = disponibles();
-//                        if (hayDisponibles(disponiblesParaDisparar)) {
-//                            int candidato = politica.elegirTransicion(disponiblesParaDisparar);
-//                            colaCondicion[candidato].release(); //activo hilo candidato
-//                        }else {
-//                            kMonitor = false;
-//                        }
-//                    } else {
-//                        mutex.release(); //doy permiso para que entre otro
-//                        colaCondicion[transition].acquire(); // Espera aqui hasta que la transicion este sensibilizada
-//                        //mutex.acquire();
-//                    }
-//                }
-//                mutex.release();
-//                return true;
-//            } catch (InterruptedException e) {
-//                Thread.currentThread().interrupt();
-//                return false;
-//            }
-//    }
-//
     @Override
     public boolean fireTransition(int transition) {
-        try {
-            mutex.acquire();
-            while (!red.disparar(transition)) {
-                mutex.release();
-                colaCondicion[transition].acquire();
-                // aca se levanta el hilo?
-                red.dormirHilo(transition);
+            try {
                 mutex.acquire();
+                boolean kMonitor = true;
+                while (kMonitor) {
+                    if (red.disparar(transition)) {
+                        boolean[] disponiblesParaDisparar = disponibles();
+                        if (hayDisponibles(disponiblesParaDisparar)) {
+                            int candidato = politica.elegirTransicion(disponiblesParaDisparar);
+                            colaCondicion[candidato].release(); //activo hilo candidato
+                            kMonitor = false;
+                        }else {
+                            kMonitor = true;
+                        }
+                    } else {
+                        mutex.release(); //doy permiso para que entre otro
+                        colaCondicion[transition].acquire(); // Espera aqui hasta que la transicion este sensibilizada
+                        //mutex.acquire();
+                        //kMonitor = true;
+                    }
+                }
+                mutex.release();
+                return true;
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return false;
             }
-            boolean[] disponiblesParaDisparar = disponibles();
-            if (hayDisponibles(disponiblesParaDisparar)) {
-                int candidato = politica.elegirTransicion(disponiblesParaDisparar);
-                System.out.println("Senalizando hilo transicion " + candidato);
-                colaCondicion[candidato].release();
-            }
-            return true;
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return false;
-        } finally {
-            mutex.release();
-        }
     }
 }
