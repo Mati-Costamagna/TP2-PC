@@ -7,11 +7,11 @@ public class RdP {
 
     private int[] marcado;
     private final int[][] matrizIncidencia;
-    private boolean[] transicionesSensibilizadas;
+    private final boolean[] transicionesSensibilizadas;
     private final long[] alpha;
     private final long[] beta;
     private final long[] timestamps;
-    private final boolean[] esperando;
+    private final boolean[] hilosEnEspera;
 
     public RdP(int[][] matrizI, int[] marcadoInicial,long[]alpha,long[] beta) {
         this.marcado = marcadoInicial;
@@ -20,12 +20,12 @@ public class RdP {
         this.beta = beta;
         this.timestamps = new long[alpha.length];
         this.transicionesSensibilizadas = new boolean[matrizI.length];
-        this.esperando = new boolean[matrizI.length];
+        this.hilosEnEspera = new boolean[matrizI.length];
         setTransicionesSensibilizadas();
     }
 
     private synchronized void setTransicionesSensibilizadas() {
-        boolean [] sensibilizadasViejas = getTransicionesSensibilizadas();
+        boolean [] sensibilizadasViejas = transicionesSensibilizadas;
         for (int t = 0; t < this.matrizIncidencia[0].length; t++) {
             for (int p = 0; p < this.matrizIncidencia.length; p++) {
                 if (matrizIncidencia[p][t] == -1) {
@@ -34,9 +34,9 @@ public class RdP {
                         timestamps[t] = 0; // Resetear timestamp si no hay marcado suficiente
                         break;
                     }
+                    this.transicionesSensibilizadas[t] = true;
                 }
             }
-            this.transicionesSensibilizadas[t] = true;
 
             // Si la transición se acaba de sensibilizar (flanco ascendente), se setea el timestamp
             if (this.transicionesSensibilizadas[t] && !sensibilizadasViejas[t]) {
@@ -64,7 +64,7 @@ public class RdP {
         return true;
     }
 
-    private long getTimeToWait(int transition) {
+    private long tiempoSleep(int transition) {
         if (alpha[transition] == 0) { // Transición no temporal
             return 0;
         }
@@ -76,37 +76,23 @@ public class RdP {
             return (timestamp + alpha[transition]) - now;
         }
 
-        if (now > timestamp + beta[transition]) { // Después de la ventana (demasiado tarde)
-            System.out.println("Transicion " + transition + " pasada de tiempo. BETA");
-            return -1; // Indica que se pasó la ventana
-        }
+//        if (now > timestamp + beta[transition]) { // Después de la ventana (demasiado tarde)
+//            System.out.println("Transicion " + transition + " pasada de tiempo. BETA");
+//            return -1; // Indica que se pasó la ventana
+//        }
 
         return 0; // Dentro de la ventana, listo para disparar
     }
-    private boolean testVentanaTiempo(int t) {
-        if (getTimeToWait(t) == 0) {
-            return true;
-        }
-        else {
-            return false;
-        }
-    }
-    public void setEsperando(int t) {
-        esperando[t] = true;
-    }
-    public void setLiberado(int t){
-        esperando[t] = false;
+
+    private void setEspera(int t, boolean estado) {
+        hilosEnEspera[t] = estado;
     }
 
-    private boolean antesVentana(int t) {
-        return (getTimeToWait(t) > 0);
+    private boolean antesDeLaVentana(int t) {
+        return (tiempoSleep(t) > 0);
     }
 
     public boolean disparar(int t) {
-        return actualizarEstadoRed(t);
-    }
-
-    private boolean actualizarEstadoRed(int t){
         int[] marcadoAnterior = marcado.clone();
         for (int i = 0; i < this.matrizIncidencia.length; i++) {
             marcado[i] = marcado[i] + matrizIncidencia[i][t];
@@ -117,6 +103,7 @@ public class RdP {
             return false;
         }
         setTransicionesSensibilizadas();
+        setEspera(t,false);
         return true;
     }
 
@@ -124,29 +111,41 @@ public class RdP {
         return transicionesSensibilizadas;
     }
 
-    public boolean estaSensibilizado(int t) {
-        boolean vent = testVentanaTiempo(t);
-        if (vent) {
-            if (!esperando[t]) {
-                timestamps[t] = System.currentTimeMillis();
-                return true;
-            } else {
-                return false;
-            }
-        } else {
-            return false;
-        }
+    private boolean testVentanaTiempo(int t) {
+        return (tiempoSleep(t) == 0);
     }
 
-    public void dormir(int t){
-        boolean antes = antesVentana(t);
-        if(antes){
-            setEsperando(t);
-            try {
-                Thread.sleep(getTimeToWait(t));
-            }catch (InterruptedException e) {
-                e.printStackTrace();
+    private boolean esperando(int t){
+        for (int i = 0; i < hilosEnEspera.length; i++) {
+            if (i != t && hilosEnEspera[i]) {
+                return true;
             }
         }
+        return false;
     }
+
+    public boolean estaSensibilizado(int t){
+        if(transicionesSensibilizadas[t]) {
+            if (testVentanaTiempo(t)) {
+                if (!esperando(t)) {
+                    return true;
+                } else {
+                    return false;
+                }
+            } else {
+                if (antesDeLaVentana(t)) {
+                    setEspera(t, true);
+                    try {
+                        Thread.sleep(tiempoSleep(t));
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    return false;
+                }
+            }
+        }
+        return false;
+    }
+
 }

@@ -46,24 +46,24 @@ public class Monitor implements MonitorInterface {
             try {
                 mutex.acquire();
                 boolean kRed = red.estaSensibilizado(transition);
-                if (kRed) {
-                    kMonitor = red.disparar(transition);
-                    if(kMonitor){
-                        if(hayDisponibles()){
-                            int candidato = politica.elegirTransicion(disponibles());
-                            red.setLiberado(candidato);
-                            colaCondicion[candidato].release();
-                        }else{
-                            kMonitor = true;
+                    if (kRed) {
+                        kMonitor = red.disparar(transition);
+                        if (kMonitor) {
+                            if (hayDisponibles()) {
+                                int candidato = politica.elegirTransicion(disponibles());
+                                colaCondicion[candidato].release();
+                            } else {
+                                kMonitor = true;
+                            }
+                        } else {
+                            mutex.release();
+                            colaCondicion[transition].acquire(); // Espera aqui hasta que la transicion este sensibilizada
                         }
                     } else {
                         mutex.release();
-                        colaCondicion[transition].acquire(); // Espera aqui hasta que la transicion este sensibilizada
+                        System.out.println(Thread.currentThread().getName() + " : No hay disponibles" + " Yendo a dormir");
+//                    return false;
                     }
-                } else{
-                    mutex.release();
-                    red.dormir(transition);
-                }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 return false;
