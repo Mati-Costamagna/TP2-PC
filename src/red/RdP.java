@@ -11,6 +11,7 @@ public class RdP {
     private final long[] alpha;
     private final long[] beta;
     private final long[] timestamps;
+    private final long[] tiemposEspera;
     private final boolean[] hilosEnEspera;
 
     public RdP(int[][] matrizI, int[] marcadoInicial,long[]alpha,long[] beta) {
@@ -21,6 +22,7 @@ public class RdP {
         this.timestamps = new long[alpha.length];
         this.transicionesSensibilizadas = new boolean[matrizI.length];
         this.hilosEnEspera = new boolean[matrizI.length];
+        this.tiemposEspera = new long[matrizI.length];
         setTransicionesSensibilizadas();
     }
 
@@ -86,6 +88,7 @@ public class RdP {
 
     private void setEspera(int t, boolean estado) {
         hilosEnEspera[t] = estado;
+        tiemposEspera[t] = tiempoSleep(t);
     }
 
     private boolean antesDeLaVentana(int t) {
@@ -125,27 +128,20 @@ public class RdP {
     }
 
     public boolean estaSensibilizado(int t){
-        if(transicionesSensibilizadas[t]) {
-            if (testVentanaTiempo(t)) {
-                if (!esperando(t)) {
-                    return true;
-                } else {
-                    return false;
-                }
+            if (testVentanaTiempo(t) && transicionesSensibilizadas[t]) {
+                return !esperando(t);
             } else {
-                if (antesDeLaVentana(t)) {
-                    setEspera(t, true);
-                    try {
-                        Thread.sleep(tiempoSleep(t));
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                } else {
-                    return false;
-                }
+                if (antesDeLaVentana(t) && transicionesSensibilizadas[t]) setEspera(t, true);
+                return false;
             }
+    }
+
+    public void dormirHilo(int t){
+        try {
+            Thread.sleep(tiemposEspera[t]);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
-        return false;
     }
 
 }

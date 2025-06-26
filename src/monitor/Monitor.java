@@ -62,7 +62,7 @@ public class Monitor implements MonitorInterface {
                     } else {
                         mutex.release();
                         System.out.println(Thread.currentThread().getName() + " : No hay disponibles" + " Yendo a dormir");
-//                    return false;
+                        red.dormirHilo(transition);
                     }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
