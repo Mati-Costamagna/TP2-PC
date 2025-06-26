@@ -8,7 +8,7 @@ import main.threads.Logger;
 
 public class Main {
     public static void main(String[] args) throws InterruptedException {
-
+        long inicio = System.currentTimeMillis();
         // --- CONFIGURACIÓN DE LA RED ---
         int[] marcadoInicial = {3, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0};
         int[][] matrizI = {
@@ -27,17 +27,16 @@ public class Main {
                 {0,  0,  0,  0,  1,  0,  1,  0,  0,  0,  1, -1},  // P11
         };
 
-        // --- CONFIGURACIÓN DE TIEMPOS (en milisegundos) ---
+        // Configuracion de tiempos (en milisegundos)
         // Transiciones temporales: T1, T3, T4, T6, T8, T9, T10
-        long[] alpha = {0,10000,0,10000,10000,0,10000,0,10000,10000,10000,0};
+        long[] alpha = {0,75,0,75,75,0,75,0,75,75,75,0};
         long[] beta = new long[marcadoInicial.length];
 
-        // Tiempos Beta (máximos) - un valor muy grande para no interferir
+        // Tiempos Beta (máximos)
         for(int i=0; i < beta.length; i++) {
             beta[i] = Long.MAX_VALUE;
         }
 
-        // Segmentos de transiciones para cada hilo
         int[][] segmentos = {{0, 1},
                 {5, 6},
                 {2, 3, 4},
@@ -45,29 +44,26 @@ public class Main {
                 {11}
         };
 
-        // --- INICIALIZACIÓN DEL SISTEMA ---
         RdP red = new RdP(matrizI, marcadoInicial, alpha, beta);
         PoliticaInterface politica = new PoliticaAleatoria(); // o PoliticaPrioritaria()
         Monitor monitor = new Monitor(red, politica);
 
-        Logger logger = new Logger(politica); // Asumo que quieres loguear la política
+        Logger logger = new Logger(politica,inicio);
         logger.start();
 
         Thread[] transicionesThreads = new Thread[segmentos.length];
         for (int i = 0; i < transicionesThreads.length; i++) {
             transicionesThreads[i] = new Transiciones(monitor, segmentos[i], logger);
-            transicionesThreads[i].setName("Hilo-Seg[" + i + "]");
             transicionesThreads[i].start();
         }
 
-        // --- CONDICIÓN DE PARADA ---
-        System.out.println("Iniciando simulación... Se detendrá después de 200 invariantes completados.");
-        while (!logger.alcanzoCantMaxInvariantes()) {
+        System.out.println("Esperando a que el logger termine de procesar.");
+        while(!logger.alcanzoCantMaxInvariantes()) {
             Thread.sleep(1000);
         }
         logger.finalizarLogger();
 
-        System.out.println("Condición de parada alcanzada. Interrumpiendo hilos de transición...");
+        System.out.println("Condición de parada alcanzada. Interrumpiendo hilos de transición.");
 
         for (Thread t : transicionesThreads) {
             t.interrupt();
@@ -77,6 +73,6 @@ public class Main {
         }
 
         logger.join();
-        System.out.println("\n--- Ejecución terminada. Revisa 'log_estadisticas.txt' para los resultados ---");
+        System.out.println("\n--- Ejecución terminada. ---");
     }
 }

@@ -46,22 +46,22 @@ public class RdP {
     }
 
     private boolean invariantesPlaza() {
-        boolean invariante1 =(marcado[0] + marcado[1] + marcado[3] + marcado[4] + marcado[5] + marcado[7] + marcado[8] + marcado[9] + marcado[10] + marcado[11]) != 3;
-        boolean invariante2 =((marcado[1] + marcado[2]) != 1);
-        boolean invariante3 =((marcado[4] + marcado[5] + marcado[6] + marcado[7] + marcado[8] + marcado[9] + marcado[10]) != 1);
-        if (invariante1) {
+        boolean invariante1 =(marcado[0] + marcado[1] + marcado[3] + marcado[4] + marcado[5] + marcado[7] + marcado[8] + marcado[9] + marcado[10] + marcado[11]) == 3;
+        boolean invariante2 =((marcado[1] + marcado[2]) == 1);
+        boolean invariante3 =((marcado[4] + marcado[5] + marcado[6] + marcado[7] + marcado[8] + marcado[9] + marcado[10]) == 1);
+        if (!invariante1) {
             System.out.println("Invariante 1 no se cumple");
             return false;
         }
-        else if (invariante2) {
+        else if (!invariante2) {
             System.out.println("Invariante 2 no se cumple");
             return false;
         }
-        else if (invariante3){
+        else if (!invariante3){
             System.out.println("Invariante 3 no se cumple");
             return false;
         }
-        return invariante1 && invariante2 && invariante3;
+        return true;
     }
 
     private long getTimeToWait(int transition) {

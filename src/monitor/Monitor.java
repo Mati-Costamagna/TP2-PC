@@ -54,7 +54,7 @@ public class Monitor implements MonitorInterface {
                             red.setLiberado(candidato);
                             colaCondicion[candidato].release();
                         }else{
-                            kMonitor = false;
+                            kMonitor = true;
                         }
                     } else {
                         mutex.release();
