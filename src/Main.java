@@ -35,8 +35,10 @@ public class Main {
         };
 
         // Inicialización de la Red de Petri, la política y el monitor
-         RdP red = new RdP(matrizI,marcadoInicial);
-        PoliticaInterface politica = new PoliticaAleatoria(); // o PoliticaPrioritaria()
+        long[] alpha = {0,0,0,0,0,1000,0,0,0,0,0,0};
+        long[] beta = {Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE};
+         RdP red = new RdP(matrizI,marcadoInicial, alpha, beta);
+        PoliticaInterface politica = new PoliticaPrioritaria(); // o PoliticaPrioritaria()
         Monitor monitor = new Monitor(red, politica);
 
         // Inicialización del Logger y su hilo

@@ -1,23 +1,21 @@
 package main.monitor;
 
+import java.util.concurrent.Semaphore;
+
 import main.politicas.PoliticaInterface;
 import main.red.RdP;
-
-import java.util.Arrays;
-import java.util.concurrent.Semaphore;
 
 public class Monitor implements MonitorInterface {
     private final RdP red;
     private final Semaphore mutex = new Semaphore(1);
     private final Semaphore[] colaCondicion;
     private final PoliticaInterface politica;
-    private final Object lock = new Object();
 
     public Monitor(RdP r, PoliticaInterface p) {
         red = r;
         politica = p;
         colaCondicion = new Semaphore[r.getTransicionesSensibilizadas().length];
-        for(int i = 0; i < r.getTransicionesSensibilizadas().length; i++){
+        for (int i = 0; i < r.getTransicionesSensibilizadas().length; i++) {
             colaCondicion[i] = new Semaphore(0);
         }
     }
@@ -25,9 +23,10 @@ public class Monitor implements MonitorInterface {
     private boolean[] disponibles() {
         boolean[] disponiblesParaDisparar = new boolean[red.getTransicionesSensibilizadas().length];
         for (int i = 0; i < red.getTransicionesSensibilizadas().length; i++) {
-            disponiblesParaDisparar[i] = red.getTransicionesSensibilizadas()[i] && (colaCondicion[i].getQueueLength() > 0);
+            disponiblesParaDisparar[i] = red.getTransicionesSensibilizadas()[i]
+                    && (colaCondicion[i].getQueueLength() > 0);
         }
-        return  disponiblesParaDisparar;
+        return disponiblesParaDisparar;
     }
 
     private boolean hayDisponibles() {
@@ -43,33 +42,60 @@ public class Monitor implements MonitorInterface {
 
     @Override
     public boolean fireTransition(int transition) {
-        boolean k = true;
-        while (k) {
-            try {
-                mutex.acquire();
-                if (red.getTransicionesSensibilizadas()[transition]) {
-                    k = red.disparar(transition);
-                    if(k){
-                        if(hayDisponibles()){
-                            colaCondicion[politica.elegirTransicion(disponibles())].release();
-                        }else{
-                            k = false;
-                        }
-                    } else {
-                        mutex.release();
-                        colaCondicion[transition].acquire(); // Espera aqui hasta que la transicion este sensibilizada
-                    }
-                }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+        try {
+            mutex.acquire();
+
+            // Verificar si la transición está sensibilizada
+            if (!red.getTransicionesSensibilizadas()[transition]) {
                 return false;
-            } finally {
-                if (mutex.availablePermits() == 0) {
-                    mutex.release();
-                }
             }
+
+            // Intentar disparar la transición
+            boolean disparoExitoso = red.disparar(transition);
+
+            if (disparoExitoso) {
+                // Si el disparo fue exitoso, liberar otra transición si hay disponibles
+                if (hayDisponibles()) {
+                    colaCondicion[politica.elegirTransicion(disponibles())].release();
+                }
+                return true;
+            } else {
+                // Si no se pudo disparar, liberar el mutex y retornar false
+                return false;
+            }
+
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
+        } finally {
+            mutex.release();
         }
-        return true;
     }
 
+    public boolean isTransitionWaitingForTime(int transition) {
+        try {
+            mutex.acquire();
+            return red.getTransicionesSensibilizadas()[transition] && !red.testVentanaTiempo(transition);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
+        } finally {
+            mutex.release();
+        }
+    }
+
+    public long getTimeToWait(int transition) {
+        try {
+            mutex.acquire();
+            if (red.getTransicionesSensibilizadas()[transition]) {
+                return red.getTimeToWait(transition);
+            }
+            return 0;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return 0;
+        } finally {
+            mutex.release();
+        }
+    }
 }
