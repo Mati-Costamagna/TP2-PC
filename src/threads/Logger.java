@@ -16,6 +16,7 @@ public class Logger extends Thread {
     private final BlockingQueue<String> transiciones = new LinkedBlockingQueue<>(); // Cola para mantener los mensajes de registro de transiciones entrantes
     private BufferedWriter writer;
     private final String politica;
+    private final long inicio;
 
     // Invariantes a monitorear
     private final List<String> complejidadSimple = Arrays.asList("0", "1", "5", "6", "11");
@@ -27,8 +28,9 @@ public class Logger extends Thread {
     private final AtomicInteger contAlta = new AtomicInteger(0);
 
 
-    public Logger(PoliticaInterface p) {
+    public Logger(PoliticaInterface p, long inicio) {
         this.politica = p.getClass().getSimpleName();
+        this.inicio = inicio;
         try {
             this.writer = new BufferedWriter(new FileWriter("log_estadisticas.txt"));
         } catch (IOException e) {
@@ -122,6 +124,7 @@ public class Logger extends Thread {
                 writer.write("Complejidad Media: " + contMedia.get() + "\n");
                 writer.write("Complejidad Alta: " + contAlta.get() + "\n");
                 writer.write("Invariantes Totales: " + (contSimple.get() + contMedia.get() + contAlta.get()) + "\n");
+                writer.write("Tiempo total: " + (System.currentTimeMillis() - inicio) + " ms\n");
                 writer.close();
                 System.out.println("Logger 'log_estadisticas.txt' cerrado. Cuenta final escrita.");
             } catch (IOException e) {
