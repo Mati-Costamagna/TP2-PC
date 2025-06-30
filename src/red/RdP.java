@@ -1,7 +1,7 @@
 package main.red;
 
 public class RdP {
-
+    public static boolean alguienEspera = false;
     private int[] marcado;
     private final int[][] matrizIncidencia;
     private final boolean[] transicionesSensibilizadas;
@@ -70,7 +70,7 @@ public class RdP {
         return System.currentTimeMillis() - this.tSensibilizadasConTiempo[t] >= alpha[t];
     }
 
-    public long getTimeToWait(int t) {
+    public long getTimeToSleep(int t) {
         long tiempoTranscurrido = System.currentTimeMillis() - this.tSensibilizadasConTiempo[t];
         long tiempoRestante = alpha[t] - tiempoTranscurrido;
         return Math.max(0, tiempoRestante);
@@ -79,6 +79,10 @@ public class RdP {
     public boolean disparar(int t) {
         int[] marcadoAnterior = marcado.clone();
         if (testVentanaTiempo(t)) {
+            if(RdP.alguienEspera){
+                System.out.println("Alguien espera.");
+                return false;
+            }
             for (int i = 0; i < this.matrizIncidencia.length; i++) {
                 marcado[i] = marcado[i] + matrizIncidencia[i][t];
             }
@@ -90,6 +94,7 @@ public class RdP {
             setTransicionesSensibilizadas();
             return true;
         } else {
+            System.out.println("Diablo");
             return false;
         }
     }

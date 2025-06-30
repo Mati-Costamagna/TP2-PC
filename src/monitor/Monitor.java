@@ -50,14 +50,24 @@ public class Monitor implements MonitorInterface {
                 if (red.getTransicionesSensibilizadas()[transition]) {
                     k = red.disparar(transition);
                     if (k) {
+                        RdP.alguienEspera = false;
                         if (hayDisponibles()) {
                             colaCondicion[politica.elegirTransicion(disponibles())].release();
                         } else {
                             k = false;
                         }
                     } else {
+                        if(red.testVentanaTiempo(transition)){
+                            System.out.println("Pongo a dormir el hilo por: " + red.getTimeToSleep(transition) + "ms");
+                            try {
+                                RdP.alguienEspera = true;
+                                Thread.sleep(red.getTimeToSleep(transition));
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        }
                         mutex.release();
-                        colaCondicion[transition].acquire(); // Espera aqui hasta que la transicion este sensibilizada
+                        //colaCondicion[transition].acquire(); // Espera aqui hasta que la transicion este sensibilizada
                     }
                 }
             } catch (InterruptedException e) {
