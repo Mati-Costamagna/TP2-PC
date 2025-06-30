@@ -35,7 +35,8 @@ public class Main {
         };
 
         // Inicialización de la Red de Petri, la política y el monitor
-        long[] alpha = {0,0,0,0,0,1000,0,0,0,0,0,0};
+        //long[] alpha = {0,1,0,1,1,0,1,0,1,1,1,0};
+        long[] alpha = {0,10,0,10,10,0,10,0,10,10,10,0};
         long[] beta = {Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE};
          RdP red = new RdP(matrizI,marcadoInicial, alpha, beta);
         PoliticaInterface politica = new PoliticaPrioritaria(); // o PoliticaPrioritaria()

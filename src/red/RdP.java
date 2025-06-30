@@ -11,6 +11,8 @@ public class RdP {
     // private final long[] tiemposEspera;
     // private final boolean[] hilosEnEspera;
 
+    public static int transicionEsperando = -1; // -1 significa que nadie espera
+
     public RdP(int[][] matrizI, int[] marcadoInicial, long[] alpha, long[] beta) {
         this.marcado = marcadoInicial;
         this.matrizIncidencia = matrizI;
@@ -78,7 +80,17 @@ public class RdP {
 
     public boolean disparar(int t) {
         int[] marcadoAnterior = marcado.clone();
+
         if (testVentanaTiempo(t)) {
+            // Si hay una transición esperando y no es esta, no permitas disparar
+            if (RdP.transicionEsperando != -1 && RdP.transicionEsperando != t) {
+                System.out.println("Hay otra transición esperando, debe dispararse esa.");
+                return false;
+            }
+            // Si esta transición era la que estaba esperando, resetea el estado
+            RdP.transicionEsperando = -1;
+
+            // Dispara la transición normalmente
             for (int i = 0; i < this.matrizIncidencia.length; i++) {
                 marcado[i] = marcado[i] + matrizIncidencia[i][t];
             }
@@ -90,6 +102,11 @@ public class RdP {
             setTransicionesSensibilizadas();
             return true;
         } else {
+            // Si no puede disparar y nadie está esperando, marca esta transición como
+            // esperando
+            if (RdP.transicionEsperando == -1) {
+                RdP.transicionEsperando = t;
+            }
             return false;
         }
     }
