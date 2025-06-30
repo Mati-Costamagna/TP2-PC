@@ -10,6 +10,7 @@ public class Monitor implements MonitorInterface {
     private final Semaphore mutex = new Semaphore(1);
     private final Semaphore[] colaCondicion;
     private final PoliticaInterface politica;
+    private final Object lock = new Object();
 
     public Monitor(RdP r, PoliticaInterface p) {
         red = r;
@@ -42,60 +43,33 @@ public class Monitor implements MonitorInterface {
 
     @Override
     public boolean fireTransition(int transition) {
-        try {
-            mutex.acquire();
-
-            // Verificar si la transición está sensibilizada
-            if (!red.getTransicionesSensibilizadas()[transition]) {
-                return false;
-            }
-
-            // Intentar disparar la transición
-            boolean disparoExitoso = red.disparar(transition);
-
-            if (disparoExitoso) {
-                // Si el disparo fue exitoso, liberar otra transición si hay disponibles
-                if (hayDisponibles()) {
-                    colaCondicion[politica.elegirTransicion(disponibles())].release();
+        boolean k = true;
+        while (k) {
+            try {
+                mutex.acquire();
+                if (red.getTransicionesSensibilizadas()[transition]) {
+                    k = red.disparar(transition);
+                    if (k) {
+                        if (hayDisponibles()) {
+                            colaCondicion[politica.elegirTransicion(disponibles())].release();
+                        } else {
+                            k = false;
+                        }
+                    } else {
+                        mutex.release();
+                        colaCondicion[transition].acquire(); // Espera aqui hasta que la transicion este sensibilizada
+                    }
                 }
-                return true;
-            } else {
-                // Si no se pudo disparar, liberar el mutex y retornar false
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
                 return false;
+            } finally {
+                if (mutex.availablePermits() == 0) {
+                    mutex.release();
+                }
             }
-
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return false;
-        } finally {
-            mutex.release();
         }
+        return true;
     }
 
-    public boolean isTransitionWaitingForTime(int transition) {
-        try {
-            mutex.acquire();
-            return red.getTransicionesSensibilizadas()[transition] && !red.testVentanaTiempo(transition);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return false;
-        } finally {
-            mutex.release();
-        }
-    }
-
-    public long getTimeToWait(int transition) {
-        try {
-            mutex.acquire();
-            if (red.getTransicionesSensibilizadas()[transition]) {
-                return red.getTimeToWait(transition);
-            }
-            return 0;
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return 0;
-        } finally {
-            mutex.release();
-        }
-    }
 }
