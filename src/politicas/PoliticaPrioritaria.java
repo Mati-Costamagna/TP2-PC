@@ -14,7 +14,7 @@ public class PoliticaPrioritaria implements PoliticaInterface {
                     return i;
                 }
             }
-            return 0;
+            return -1; // Si no hay transiciones disponibles, retorna -1
         }
     }
 }

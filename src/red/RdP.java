@@ -48,7 +48,8 @@ public class RdP {
     }
 
     public boolean disparar(int t) {
-        int[] marcadoAnterior = marcado.clone();
+        if(transicionesSensibilizadas[t]) {
+            int[] marcadoAnterior = marcado.clone();
 
             for (int i = 0; i < this.matrizIncidencia.length; i++) {
                 marcado[i] = marcado[i] + matrizIncidencia[i][t];
@@ -57,9 +58,13 @@ public class RdP {
                 marcado = marcadoAnterior.clone(); // Revertir el marcado si no se cumple la invariante de plaza
                 System.out.println("No se cumple la invariante de plaza, revirtiendo el marcado.");
                 return false; // No se cumple la invariante de plaza, no se dispara la transición
+            }else {
+                setTransicionesSensibilizadas();
+                return true;
             }
-            setTransicionesSensibilizadas();
-            return true;
+        }else{
+            return false; // La transición no está sensibilizada, no se dispara
+        }
 
     }
 }
