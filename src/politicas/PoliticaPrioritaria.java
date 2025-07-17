@@ -1,20 +1,23 @@
 package main.politicas;
 
+import java.util.Random;
 public class PoliticaPrioritaria implements PoliticaInterface {
 
-    public PoliticaPrioritaria() {}
+    public PoliticaPrioritaria() {
+    }
+
+    private final Random rand = new Random();
+
     @Override
-    public  int elegirTransicion(boolean[] t){
-        if(t[5]) {
+    public int elegirTransicion(boolean[] t) {
+        if (t[5]) {
             return 5;
-        }
-        else{
-            for (int i=0; i<t.length; i++){
-                if(t[i]){
-                    return i;
-                }
+        } else {
+            int a = rand.nextInt(t.length);
+            while (!t[a]) {
+                a = rand.nextInt(t.length);
             }
-            return 0;
+            return a;
         }
     }
 }

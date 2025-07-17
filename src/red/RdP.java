@@ -5,20 +5,16 @@ public class RdP {
     private int[] marcado;
     private final int[][] matrizIncidencia;
     private final boolean[] transicionesSensibilizadas;
-    private final long[] tSensibilizadasConTiempo;
+    private final long[] tiempoSensibilizacion;
     private final long[] alpha;
     private final long[] beta;
-    // private final long[] tiemposEspera;
-    // private final boolean[] hilosEnEspera;
-
-    public static int transicionEsperando = -1; // -1 significa que nadie espera
 
     public RdP(int[][] matrizI, int[] marcadoInicial, long[] alpha, long[] beta) {
         this.marcado = marcadoInicial;
         this.matrizIncidencia = matrizI;
         this.alpha = alpha;
         this.beta = beta;
-        this.tSensibilizadasConTiempo = new long[matrizI.length];
+        this.tiempoSensibilizacion = new long[matrizI.length];
         transicionesSensibilizadas = new boolean[matrizI.length];
         setTransicionesSensibilizadas();
 
@@ -28,17 +24,15 @@ public class RdP {
 
         for (int i = 0; i < this.matrizIncidencia.length; i++) { // columnas
             for (int j = 0; j < this.matrizIncidencia[i].length; j++) { // filas
-                if (matrizIncidencia[j][i] == -1) {
+                if (matrizIncidencia[j][i] == -1) { // Verifica sensibilizacion por token
                     if (marcado[j] < 1) {
                         transicionesSensibilizadas[i] = false;
-                        tSensibilizadasConTiempo[i] = 0;
+                        tiempoSensibilizacion[i] = 0;
                         break;
                     }
-                    // Si estaba sensibilizada, el tiempo tiene que ser el de antes. Sino guardo uno
-                    // nuevo
-                    tSensibilizadasConTiempo[i] = transicionesSensibilizadas[i] && tSensibilizadasConTiempo[i] != 0
-                            ? tSensibilizadasConTiempo[i]
-                            : System.currentTimeMillis();
+                    tiempoSensibilizacion[i] = transicionesSensibilizadas[i] && tiempoSensibilizacion[i] != 0
+                            ? tiempoSensibilizacion[i]
+                            : System.currentTimeMillis(); // Actualizar tiempo de sensibilización si es necesario
                     transicionesSensibilizadas[i] = true;
                 }
             }
@@ -69,45 +63,46 @@ public class RdP {
     }
 
     public boolean testVentanaTiempo(int t) {
-        return System.currentTimeMillis() - this.tSensibilizadasConTiempo[t] >= alpha[t];
+        return (System.currentTimeMillis() - this.tiempoSensibilizacion[t] >= alpha[t])
+                && (System.currentTimeMillis() - this.tiempoSensibilizacion[t] <= beta[t]);
+    }
+
+    public boolean antesDeLaVentanaTiempo(int t) {
+        return (System.currentTimeMillis() - this.tiempoSensibilizacion[t] < alpha[t]);
     }
 
     public long getTimeToWait(int t) {
-        long tiempoTranscurrido = System.currentTimeMillis() - this.tSensibilizadasConTiempo[t];
+        long tiempoTranscurrido = System.currentTimeMillis() - this.tiempoSensibilizacion[t];
         long tiempoRestante = alpha[t] - tiempoTranscurrido;
         return Math.max(0, tiempoRestante);
     }
 
-    public boolean disparar(int t) {
+    private boolean actualizarMarcado(int t){
         int[] marcadoAnterior = marcado.clone();
-
-        if (testVentanaTiempo(t)) {
-            // Si hay una transición esperando y no es esta, no permitas disparar
-            if (RdP.transicionEsperando != -1 && RdP.transicionEsperando != t) {
-                System.out.println("Hay otra transición esperando, debe dispararse esa.");
-                return false;
+        for (int i = 0; i < this.matrizIncidencia.length; i++) {
+            marcado[i] += matrizIncidencia[i][t];
+            if (marcado[i] < 0) {
+                System.out.println("Marcado negativo en la plaza " + i + ", revertiendo el marcado.");
+                marcado = marcadoAnterior.clone(); // Revertir el marcado si se vuelve negativo
+                return false; // No se dispara la transición
             }
-            // Si esta transición era la que estaba esperando, resetea el estado
-            RdP.transicionEsperando = -1;
-
-            // Dispara la transición normalmente
-            for (int i = 0; i < this.matrizIncidencia.length; i++) {
-                marcado[i] = marcado[i] + matrizIncidencia[i][t];
-            }
-            if (!invariantesPlaza()) {
-                marcado = marcadoAnterior.clone();
-                System.out.println("No se cumple la invariante de plaza, revirtiendo el marcado.");
-                return false;
-            }
+        }
+        if (!invariantesPlaza()) {
+            marcado = marcadoAnterior.clone(); // Revertir el marcado si no se cumple la invariante de plaza
+            System.out.println("No se cumple la invariante de plaza, revirtiendo el marcado.");
+            return false; // No se cumple la invariante de plaza, no se dispara la transición
+        } else {
             setTransicionesSensibilizadas();
             return true;
-        } else {
-            // Si no puede disparar y nadie está esperando, marca esta transición como
-            // esperando
-            if (RdP.transicionEsperando == -1) {
-                RdP.transicionEsperando = t;
-            }
-            return false;
+        }
+    }
+
+    public boolean disparar(int t) {
+        if(!transicionesSensibilizadas[t]) {
+            System.out.println("Transición " + t + " no está sensibilizada.");
+            return false; // No se dispara la transición si no está sensibilizada
+        }else {
+            return actualizarMarcado(t);
         }
     }
 }

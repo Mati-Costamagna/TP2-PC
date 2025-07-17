@@ -20,13 +20,28 @@ public class Monitor implements MonitorInterface {
         }
     }
 
-    private boolean[] disponibles() {
-        boolean[] disponiblesParaDisparar = new boolean[red.getTransicionesSensibilizadas().length];
-        for (int i = 0; i < red.getTransicionesSensibilizadas().length; i++) {
-            disponiblesParaDisparar[i] = red.getTransicionesSensibilizadas()[i]
-                    && (colaCondicion[i].getQueueLength() > 0);
+    private boolean[] quienesEstan(){
+        boolean[] quienesEstan = new boolean[colaCondicion.length];
+        for (int i = 0; i < colaCondicion.length; i++) {
+            quienesEstan[i] = colaCondicion[i].hasQueuedThreads();
         }
-        return disponiblesParaDisparar;
+        return quienesEstan;
+    }
+
+    private boolean[] sensibilizadas(){
+        boolean[] sensibilizadas = new boolean[red.getTransicionesSensibilizadas().length];
+        for (int i = 0; i < red.getTransicionesSensibilizadas().length; i++) {
+            sensibilizadas[i] = red.getTransicionesSensibilizadas()[i];
+        }
+        return sensibilizadas;
+    }
+
+    private boolean[] disponibles() { // ROTO
+        boolean[] disponiblesParaDisparar = new boolean[sensibilizadas().length];
+        for (int i = 0; i < sensibilizadas().length; i++) {
+            disponiblesParaDisparar[i] = sensibilizadas()[i] && quienesEstan()[i];
+        }
+        return  disponiblesParaDisparar;
     }
 
     private boolean hayDisponibles() {
@@ -40,62 +55,130 @@ public class Monitor implements MonitorInterface {
         return hayDisponibles;
     }
 
+    private void colaDeEntrada(){
+        try {
+            mutex.acquire();
+            System.out.println(Thread.currentThread().getName() + " ha entrado al monitor");
+        } catch (InterruptedException e) {
+            System.out.println("El hilo " + Thread.currentThread().getName() + " se interrumpio en el monitor");
+            System.exit(1);
+        }
+    }
+
+    private void enviarAColaCondicion(int transition) {
+        try {
+            //colaCondicion[transition].acquire();
+            System.out.println(Thread.currentThread().getName() + " yendo a dormir por " + red.getTimeToWait(transition) + "ms en la cola de condicion de la transicion " + transition);
+            Thread.sleep(red.getTimeToWait(transition));
+            colaCondicion[transition].acquire();
+
+        } catch (Exception e) {
+            System.out.println("Error al enviar a la cola de condicion la transicion " + transition);
+        }
+    }
+
+
+//    @Override
+//    public boolean fireTransition(int transition) {
+//            colaDeEntrada();
+//            // Verificar si la transición está sensibilizada
+//            if (!sensibilizadas()[transition]) {
+//                System.out.println("Transición " + transition + " no está sensibilizada.");
+//                mutex.release();
+//                return false;
+//            }
+//            boolean disparoExitoso = true;
+//            // Intentar disparar la transición
+//            while (disparoExitoso) {
+//                disparoExitoso = red.disparar(transition);
+//                if (disparoExitoso) {
+//                    System.out.println(Thread.currentThread().getName() + " ha terminado disparado la transición " + transition);
+//                    if (hayDisponibles()) {
+//                        int candidato = politica.elegirTransicion(disponibles());
+//                        System.out.println("Transicion candidata elegida: " + candidato + ". Activando hilo en cola de condición.");
+//                        colaCondicion[candidato].release();
+//                        return true;
+//                    } else{
+//                        disparoExitoso = false;
+//                    }
+//                } else {
+//                    System.out.println(Thread.currentThread().getName() + " ha salido del monitor. La transicion " + transition + " no pudo ser disparada.");
+//                    mutex.release();
+//                    System.out.println("Transición " + transition + " no pudo ser disparada. Yendo a la cola de condición.");
+//                    enviarAColaCondicion(transition);
+//                }
+//            }
+//            System.out.println(Thread.currentThread().getName() + " ha salido del monitor");
+//            mutex.release();
+//            return true;
+//    }
     @Override
     public boolean fireTransition(int transition) {
-        try {
-            mutex.acquire();
-
-            // Verificar si la transición está sensibilizada
-            if (!red.getTransicionesSensibilizadas()[transition]) {
-                return false;
-            }
-
-            // Intentar disparar la transición
-            boolean disparoExitoso = red.disparar(transition);
-
-            if (disparoExitoso) {
-                // Si el disparo fue exitoso, liberar otra transición si hay disponibles
-                if (hayDisponibles()) {
-                    colaCondicion[politica.elegirTransicion(disponibles())].release();
+            colaDeEntrada();
+            boolean disparoExitoso = true;
+            while(disparoExitoso) {
+                if (red.testVentanaTiempo(transition)) {
+                    if(red.disparar(transition)){
+                        System.out.println(Thread.currentThread().getName() + " ha disparado la transición " + transition);
+                        if (hayDisponibles()) {
+                            int candidato = politica.elegirTransicion(disponibles());
+                            System.out.println("Transición candidata elegida: " + candidato + ". Activando hilo en cola de condición.");
+                            colaCondicion[candidato].release();
+                            disparoExitoso = false;
+                            //return true;
+                        }else {
+                            disparoExitoso = false;
+                        }
+                    }else{
+                        System.out.println(Thread.currentThread().getName() + " ha salido del monitor. La transición " + transition + " no pudo ser disparada.");
+                        mutex.release();
+                        try {
+                            colaCondicion[transition].acquire(); // Despierta a un hilo en la cola de condición
+                        } catch (InterruptedException e) {
+                            System.out.println("El hilo " + Thread.currentThread().getName() + " se interrumpio en el monitor");
+                        }
+                        disparoExitoso = false;
+                    }
+                } else {
+                    if (red.antesDeLaVentanaTiempo(transition)) {
+                        System.out.println(Thread.currentThread().getName() + " ha salido del monitor. La transición " + transition + " está esperando por tiempo.");
+                        mutex.release();
+                        enviarAColaCondicion(transition);
+                    }else{
+                        System.out.println(Thread.currentThread().getName() + " ha salido del monitor. La transición " + transition + " se paso de tiempo.");
+                        return false;
+                    }
                 }
-                return true;
-            } else {
-                // Si no se pudo disparar, liberar el mutex y retornar false
-                return false;
             }
-
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return false;
-        } finally {
+            System.out.println(Thread.currentThread().getName() + " ha salido del monitor.");
             mutex.release();
+            return true;
         }
-    }
 
-    public boolean isTransitionWaitingForTime(int transition) {
-        try {
-            mutex.acquire();
-            return red.getTransicionesSensibilizadas()[transition] && !red.testVentanaTiempo(transition);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return false;
-        } finally {
-            mutex.release();
-        }
-    }
+//    public boolean isTransitionWaitingForTime(int transition) {
+//        try {
+//            mutex.acquire();
+//            return red.getTransicionesSensibilizadas()[transition] && !red.testVentanaTiempo(transition);
+//        } catch (InterruptedException e) {
+//            Thread.currentThread().interrupt();
+//            return false;
+//        } finally {
+//            mutex.release();
+//        }
+//    }
 
-    public long getTimeToWait(int transition) {
-        try {
-            mutex.acquire();
-            if (red.getTransicionesSensibilizadas()[transition]) {
-                return red.getTimeToWait(transition);
-            }
-            return 0;
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return 0;
-        } finally {
-            mutex.release();
-        }
-    }
+//    public long getTimeToWait(int transition) {
+//        try {
+//            mutex.acquire();
+//            if (red.getTransicionesSensibilizadas()[transition]) {
+//                return red.getTimeToWait(transition);
+//            }
+//            return 0;
+//        } catch (InterruptedException e) {
+//            Thread.currentThread().interrupt();
+//            return 0;
+//        } finally {
+//            mutex.release();
+//        }
+//    }
 }
