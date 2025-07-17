@@ -16,14 +16,15 @@ public class Logger extends Thread {
     private final BlockingQueue<String> transiciones = new LinkedBlockingQueue<>(); // Cola para mantener los mensajes de registro de transiciones entrantes
     private BufferedWriter writer;
     private final String politica;
+    private final long startTime; // Tiempo de inicio del logger
 
     // Invariantes a monitorear
-//    private final List<String> complejidadSimple = Arrays.asList("0", "1", "5", "6", "11");
-//    private final List<String> complejidadMedia = Arrays.asList("0", "1", "2", "3", "4", "11");
-//    private final List<String> complejidadAlta = Arrays.asList("0", "1", "7", "8", "9", "10", "11");
-    private final List<String> complejidadSimple = Arrays.asList("5", "6");
-    private final List<String> complejidadMedia = Arrays.asList("2", "3", "4");
-    private final List<String> complejidadAlta = Arrays.asList("7", "8", "9", "10");
+    private final List<String> complejidadSimple = Arrays.asList("0", "1", "5", "6", "11");
+    private final List<String> complejidadMedia = Arrays.asList("0", "1", "2", "3", "4", "11");
+    private final List<String> complejidadAlta = Arrays.asList("0", "1", "7", "8", "9", "10", "11");
+//    private final List<String> complejidadSimple = Arrays.asList("5", "6");
+//    private final List<String> complejidadMedia = Arrays.asList("2", "3", "4");
+//    private final List<String> complejidadAlta = Arrays.asList("7", "8", "9", "10");
 
     private final AtomicInteger contSimple = new AtomicInteger(0);
     private final AtomicInteger contMedia = new AtomicInteger(0);
@@ -32,6 +33,7 @@ public class Logger extends Thread {
 
     public Logger(PoliticaInterface p) {
         this.politica = p.getClass().getSimpleName();
+        startTime = System.currentTimeMillis();
         try {
             this.writer = new BufferedWriter(new FileWriter("log_estadisticas.txt"));
         } catch (IOException e) {
@@ -44,6 +46,10 @@ public class Logger extends Thread {
         if (!finalizar.get()) { // Solo registrar si no se ha indicado explícitamente que se detenga
             transiciones.offer(String.valueOf(transicion)); // Añadir a la cola sin bloqueo, convertir int a String
         }
+    }
+
+    public long getTotalExecutionTimeMillis() {
+        return System.currentTimeMillis() - startTime;
     }
 
     public void finalizarLogger() {
@@ -125,6 +131,7 @@ public class Logger extends Thread {
                 writer.write("Complejidad Media: " + contMedia.get() + "\n");
                 writer.write("Complejidad Alta: " + contAlta.get() + "\n");
                 writer.write("Invariantes Totales: " + (contSimple.get() + contMedia.get() + contAlta.get()) + "\n");
+                writer.write("Tiempo total de ejecución: " + getTotalExecutionTimeMillis() + " ms\n");
                 writer.close();
                 System.out.println("Logger 'log_estadisticas.txt' cerrado. Cuenta final escrita.");
             } catch (IOException e) {

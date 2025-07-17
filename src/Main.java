@@ -36,7 +36,7 @@ public class Main {
 
         // Inicialización de la Red de Petri, la política y el monitor
          RdP red = new RdP(matrizI,marcadoInicial);
-        PoliticaInterface politica = new PoliticaAleatoria(); // PoliticaAleatoria() o PoliticaPrioritaria()
+        PoliticaInterface politica = new PoliticaPrioritaria(); // PoliticaAleatoria() o PoliticaPrioritaria()
         Monitor monitor = new Monitor(red, politica);
 
         // Inicialización del Logger y su hilo
