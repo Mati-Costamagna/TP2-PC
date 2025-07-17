@@ -18,9 +18,12 @@ public class Logger extends Thread {
     private final String politica;
 
     // Invariantes a monitorear
-    private final List<String> complejidadSimple = Arrays.asList("0", "1", "5", "6", "11");
-    private final List<String> complejidadMedia = Arrays.asList("0", "1", "2", "3", "4", "11");
-    private final List<String> complejidadAlta = Arrays.asList("0", "1", "7", "8", "9", "10", "11");
+//    private final List<String> complejidadSimple = Arrays.asList("0", "1", "5", "6", "11");
+//    private final List<String> complejidadMedia = Arrays.asList("0", "1", "2", "3", "4", "11");
+//    private final List<String> complejidadAlta = Arrays.asList("0", "1", "7", "8", "9", "10", "11");
+    private final List<String> complejidadSimple = Arrays.asList("5", "6");
+    private final List<String> complejidadMedia = Arrays.asList("2", "3", "4");
+    private final List<String> complejidadAlta = Arrays.asList("7", "8", "9", "10");
 
     private final AtomicInteger contSimple = new AtomicInteger(0);
     private final AtomicInteger contMedia = new AtomicInteger(0);

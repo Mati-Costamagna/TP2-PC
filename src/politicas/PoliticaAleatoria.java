@@ -9,23 +9,18 @@ public class PoliticaAleatoria implements PoliticaInterface {
 
     @Override
     public int elegirTransicion(boolean[] t) {
-        ArrayList<Integer> transiciones = new ArrayList<>();
-        for(int indice: conflictos) {
-            if(t[indice]) {
-                transiciones.add(indice);
+        if(t[2] || t[5] || t[7]){
+            int a = rand.nextInt(conflictos.length);
+            while(!t[conflictos[a]]) {
+                a = rand.nextInt(conflictos.length);
             }
-        }
-        if(!transiciones.isEmpty()) {
-            return transiciones.get(rand.nextInt(transiciones.size()));
-        }
-        else {
-            for (int i = 0; i < t.length; i++) {
-                if (t[i]) transiciones.add(i);
+            return conflictos[a];
+        } else{
+            int a = rand.nextInt(t.length);
+            while (!t[a]){
+                a = rand.nextInt(t.length);
             }
-            if (!transiciones.isEmpty()) {
-                return transiciones.get(rand.nextInt(transiciones.size()));
-            }
-            return 0;
+            return a;
         }
     }
 }
