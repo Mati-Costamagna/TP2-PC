@@ -69,7 +69,7 @@ public class Monitor implements MonitorInterface {
         colaCondicion[transition].release();
     }
 
-    private synchronized void despertarCandidato() {
+    private void despertarCandidato() {
         boolean[] disponibles = disponibles();
         int candidato = politica.elegirTransicion(disponibles);
 

@@ -38,7 +38,7 @@ public class Main {
         // Inicialización de la Red de Petri, la política y el monitor
         Mutex mutex = new Mutex();
         RdP red = new RdP(matrizI,marcadoInicial);
-        PoliticaInterface politica = new PoliticaAleatoria(); // PoliticaAleatoria() o PoliticaPrioritaria()
+        PoliticaInterface politica = new PoliticaPrioritaria(); // PoliticaAleatoria() o PoliticaPrioritaria()
         Monitor monitor = new Monitor(red, mutex, politica);
 
         // Inicialización del Logger y su hilo

@@ -54,6 +54,7 @@ public class RdP {
         }
     }
 
+
     public boolean disparar(int t) {
         if(!transicionesSensibilizadas[t]) {
             //System.out.println("La transición " + t + " no está sensibilizada.");

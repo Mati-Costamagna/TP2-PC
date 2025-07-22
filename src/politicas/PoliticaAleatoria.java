@@ -13,7 +13,7 @@ public class PoliticaAleatoria implements PoliticaInterface {
 
         // Primero buscamos en las transiciones conflictivas
         for (int c : conflictos) {
-            if (c >= 0 && c < t.length && t[c]) {
+            if (c < t.length && t[c]) {
                 candidatas.add(c);
             }
         }

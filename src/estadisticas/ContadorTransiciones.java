@@ -20,10 +20,10 @@ public class ContadorTransiciones {
         return transicionCounts.get(transicion).get();
     }
 
-    public int getMinCount(List<String> transiciones) {
+    public int getMinCount(List<String> secuencias) {
         int minimo = Integer.MAX_VALUE;
 
-        for (String transicion : transiciones) {
+        for (String transicion : secuencias) {
             int cantidad = get(transicion); // Obtener cuántas veces se disparó esta transición
             if (cantidad < minimo) {
                 minimo = cantidad; // Actualizar el mínimo si encontramos una transición con menor cantidad
