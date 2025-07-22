@@ -1,6 +1,7 @@
 package main;
 
 import main.monitor.Monitor;
+import main.monitor.Mutex;
 import main.politicas.*;
 import main.red.RdP;
 import main.threads.Transiciones;
@@ -28,16 +29,17 @@ public class Main {
         };
 
         int[][] segmentos = {{0, 1},
-                {5, 6},
                 {2, 3, 4},
+                {5, 6},
                 {7, 8, 9, 10},
                 {11}
         };
 
         // Inicialización de la Red de Petri, la política y el monitor
-         RdP red = new RdP(matrizI,marcadoInicial);
-        PoliticaInterface politica = new PoliticaPrioritaria(); // PoliticaAleatoria() o PoliticaPrioritaria()
-        Monitor monitor = new Monitor(red, politica);
+        Mutex mutex = new Mutex();
+        RdP red = new RdP(matrizI,marcadoInicial);
+        PoliticaInterface politica = new PoliticaAleatoria(); // PoliticaAleatoria() o PoliticaPrioritaria()
+        Monitor monitor = new Monitor(red, mutex, politica);
 
         // Inicialización del Logger y su hilo
         Logger logger = new Logger(politica);
@@ -55,17 +57,17 @@ public class Main {
             // Espera activa hasta que se alcancen las condiciones de parada
             Thread.sleep(1000);
         }
+
         logger.finalizarLogger();
 
         // Interrumpe y espera a que los hilos de transiciones terminen
         for (Thread t : transicionesThreads) {
             t.interrupt();
-            try {
-                t.join();
-            } catch (InterruptedException e) {
-                System.err.println("Hilo de transición interrumpido al finalizar: " + e.getMessage());
-                Thread.currentThread().interrupt();
-            }
+        }
+
+    // Esperar a que terminen
+        for (Thread t : transicionesThreads) {
+            t.join();
         }
         logger.join();
         System.out.println("\n--- Ejecución terminada. Revisa 'log_estadisticas.txt' para los resultados ---");

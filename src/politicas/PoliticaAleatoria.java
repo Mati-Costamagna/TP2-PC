@@ -9,18 +9,34 @@ public class PoliticaAleatoria implements PoliticaInterface {
 
     @Override
     public int elegirTransicion(boolean[] t) {
-        if(t[2] || t[5] || t[7]){
-            int a = rand.nextInt(conflictos.length);
-            while(!t[conflictos[a]]) {
-                a = rand.nextInt(conflictos.length);
+        ArrayList<Integer> candidatas = new ArrayList<>();
+
+        // Primero buscamos en las transiciones conflictivas
+        for (int c : conflictos) {
+            if (c >= 0 && c < t.length && t[c]) {
+                candidatas.add(c);
             }
-            return conflictos[a];
-        } else{
-            int a = rand.nextInt(t.length);
-            while (!t[a]){
-                a = rand.nextInt(t.length);
-            }
-            return a;
         }
+
+        // Si hay candidatas entre los conflictos, elegimos de ahí
+        if (!candidatas.isEmpty()) {
+            return candidatas.get(rand.nextInt(candidatas.size()));
+        }
+
+        // Si no, buscamos cualquier transición disponible
+        for (int i = 0; i < t.length; i++) {
+            if (t[i]) {
+                candidatas.add(i);
+            }
+        }
+
+        // Elegimos aleatoriamente entre todas las disponibles, o devolvemos -1 si no hay ninguna
+        if (candidatas.isEmpty()) {
+            return -1; // No hay ninguna transición disponible para disparar
+        } else {
+            int indiceAleatorio = rand.nextInt(candidatas.size()); // Elegimos una al azar entre las candidatas
+            return candidatas.get(indiceAleatorio); // Devolvemos el índice de transición elegida
+        }
+
     }
 }

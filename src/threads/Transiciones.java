@@ -2,6 +2,7 @@ package main.threads;
 import main.monitor.Monitor;
 
 
+import javax.swing.plaf.TableHeaderUI;
 import java.util.Random;
 
 public class Transiciones extends Thread {
@@ -20,12 +21,14 @@ public class Transiciones extends Thread {
     public void run(){
         while(!Thread.currentThread().isInterrupted()){
             for(int transicion : transiciones) {
-                boolean disparo = monitor.fireTransition(transicion);
-                if (disparo) {
-                    System.out.println("Transicion " +  transicion + " disparada por " + Thread.currentThread().getName());
-                    logger.logTransicion(transicion);
-                } else {
-                    System.out.println("Transicion " +  transicion + " no disparada por " + Thread.currentThread().getName());
+                boolean disparo = false;
+                while (!disparo && !Thread.currentThread().isInterrupted()) {
+                    disparo = monitor.fireTransition(transicion);
+                    if (disparo) {
+                        System.out.println("Transicion " +  transicion + " disparada por " + Thread.currentThread().getName());
+                        logger.logTransicion(transicion);
+                    }
+                    try { Thread.sleep(1); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
                 }
             }
         }

@@ -1,10 +1,14 @@
 package main.red;
 
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
 public class RdP {
 
     private int[] marcado;
     private final int[][] matrizIncidencia;
     private final boolean[] transicionesSensibilizadas;
+    private final Object lock = new Object();
 
     public RdP(int[][] matrizI, int[] marcadoInicial) {
         this.marcado = marcadoInicial;
@@ -13,16 +17,17 @@ public class RdP {
         setTransicionesSensibilizadas();
     }
 
-    private synchronized void setTransicionesSensibilizadas() {
-        for (int i = 0; i < this.matrizIncidencia.length; i++) { //columnas
-            for (int j = 0; j < this.matrizIncidencia[i].length; j++) { //filas
-                if (matrizIncidencia[j][i] == -1) {
-                    if (marcado[j] < 1) {
-                        transicionesSensibilizadas[i] = false;
+    private void setTransicionesSensibilizadas() {
+        synchronized (lock) {
+            for (int t = 0; t < matrizIncidencia[0].length; t++) { //transiciones
+                boolean sensibilizada = true;
+                for (int p = 0; p < matrizIncidencia.length; p++) { //plazas
+                    if (matrizIncidencia[p][t] < 0 && (marcado[p] + matrizIncidencia[p][t] < 0)) {
+                        sensibilizada = false;
                         break;
                     }
-                    transicionesSensibilizadas[i] = true;
                 }
+                transicionesSensibilizadas[t] = sensibilizada;
             }
         }
     }
@@ -43,47 +48,34 @@ public class RdP {
                 ((marcado[4] + marcado[5] + marcado[6] + marcado[7] + marcado[8] + marcado[9] + marcado[10]) == 1);
     }
 
-//    private boolean actualizarMarcado(int t){
-//        int[] marcadoAnterior = marcado.clone();
-//        for (int i = 0; i < this.matrizIncidencia.length; i++) {
-//            marcado[i] += matrizIncidencia[i][t];
-//            if (marcado[i] < 0) {
-//                System.out.println("Marcado negativo en la plaza " + i + ", revertiendo el marcado.");
-//                marcado = marcadoAnterior.clone(); // Revertir el marcado si se vuelve negativo
-//                return false; // No se cumple la invariante de plaza, no se dispara la transición
-//            }
-//        }
-//        if (!invariantesPlaza()) {
-//            marcado = marcadoAnterior.clone(); // Revertir el marcado si no se cumple la invariante de plaza
-//            System.out.println("No se cumple la invariante de plaza, revirtiendo el marcado.");
-//            return false; // No se cumple la invariante de plaza, no se dispara la transición
-//        } else {
-//            setTransicionesSensibilizadas();
-//            return true;
-//        }
-//    }
-
     public boolean[] getTransicionesSensibilizadas() {
-        return transicionesSensibilizadas;
+        synchronized (lock) {
+            return transicionesSensibilizadas;
+        }
     }
 
     public boolean disparar(int t) {
-        int[] marcadoAnterior = marcado.clone();
-        for (int i = 0; i < this.matrizIncidencia.length; i++) {
-            marcado[i] += matrizIncidencia[i][t];
-            if (marcado[i] < 0) {
-                System.out.println("Marcado negativo en la plaza " + i + ", revertiendo el marcado.");
-                marcado = marcadoAnterior.clone(); // Revertir el marcado si se vuelve negativo
-                return false; // No se dispara la transición
+        if(!transicionesSensibilizadas[t]) {
+            //System.out.println("La transición " + t + " no está sensibilizada.");
+            return false; // No se dispara la transición si no está sensibilizada
+        }else {
+            int[] marcadoAnterior = marcado.clone();
+            for (int i = 0; i < this.matrizIncidencia.length; i++) {
+                marcado[i] += matrizIncidencia[i][t];
+                if (marcado[i] < 0) {
+                    //System.out.println("Marcado negativo en la plaza " + i + ", revertiendo el marcado.");
+                    marcado = marcadoAnterior.clone(); // Revertir el marcado si se vuelve negativo
+                    return false; // No se dispara la transición
+                }
             }
-        }
-        if (!invariantesPlaza()) {
-            marcado = marcadoAnterior.clone(); // Revertir el marcado si no se cumple la invariante de plaza
-            System.out.println("No se cumple la invariante de plaza, revirtiendo el marcado.");
-            return false; // No se cumple la invariante de plaza, no se dispara la transición
-        } else {
-            setTransicionesSensibilizadas();
-            return true;
+            if (!invariantesPlaza()) {
+                marcado = marcadoAnterior.clone(); // Revertir el marcado si no se cumple la invariante de plaza
+                //System.out.println("No se cumple la invariante de plaza, revirtiendo el marcado.");
+                return false; // No se cumple la invariante de plaza, no se dispara la transición
+            } else {
+                setTransicionesSensibilizadas();
+                return true;
+            }
         }
     }
 }

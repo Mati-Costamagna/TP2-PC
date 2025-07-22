@@ -8,12 +8,13 @@ import java.util.concurrent.Semaphore;
 
 public class Monitor implements MonitorInterface {
     private final RdP red;
-    private final Semaphore mutex = new Semaphore(1);
+    private final Mutex mutex;
     private final Semaphore[] colaCondicion;
     private final PoliticaInterface politica;
 
-    public Monitor(RdP r, PoliticaInterface p) {
+    public Monitor(RdP r, Mutex m, PoliticaInterface p) {
         red = r;
+        mutex = m;
         politica = p;
         colaCondicion = new Semaphore[r.getTransicionesSensibilizadas().length];
         for(int i = 0; i < r.getTransicionesSensibilizadas().length; i++){
@@ -37,7 +38,7 @@ public class Monitor implements MonitorInterface {
         return sensibilizadas;
     }
 
-    private boolean[] disponibles() { // ROTO
+    private boolean[] disponibles() {
         boolean[] disponiblesParaDisparar = new boolean[sensibilizadas().length];
         for (int i = 0; i < sensibilizadas().length; i++) {
             disponiblesParaDisparar[i] = sensibilizadas()[i] && quienesEstan()[i];
@@ -57,54 +58,49 @@ public class Monitor implements MonitorInterface {
     }
 
     private void colaDeEntrada(){
-        try {
-            mutex.acquire();
-            System.out.println(Thread.currentThread().getName() + " ha entrado al monitor");
-        } catch (InterruptedException e) {
-            System.out.println("El hilo " + Thread.currentThread().getName() + " se interrumpio en el monitor");
-            System.exit(1);
-        }
+        mutex.acquire();
     }
 
-    private void enviarAColaCondicion(int transition) {
-        try {
-            colaCondicion[transition].acquire();
-        } catch (Exception e) {
-            System.out.println("Error al enviar a la cola de condicion la transicion " + transition);
+    private void enviarAColaCondicion(int transition) throws InterruptedException{
+        colaCondicion[transition].acquire();
+    }
+
+    private void sacarDeColaCondicion(int transition) {
+        colaCondicion[transition].release();
+    }
+
+    private synchronized void despertarCandidato() {
+        boolean[] disponibles = disponibles();
+        int candidato = politica.elegirTransicion(disponibles);
+
+        if (candidato != -1) {
+            sacarDeColaCondicion(candidato);
         }
     }
 
     @Override
     public boolean fireTransition(int transition) {
-            colaDeEntrada();
-            if(!sensibilizadas()[transition]) {
-                System.out.println(Thread.currentThread().getName() + " no puede disparar la transicion " + transition + " porque no esta sensibilizada.");
+        colaDeEntrada();
+        //System.out.println("Entro hilo " + Thread.currentThread().getName() + " al monitor");
+        while (true) {
+            boolean fired = red.disparar(transition);
+            if (fired) {
+                //System.out.println("Transicion " + transition + " disparada por " + Thread.currentThread().getName());
+                despertarCandidato();
                 mutex.release();
-                return false;
-            }else {
-                boolean k = true;
-                while (k) {
-                    k = red.disparar(transition);
-                    if (k) {
-                        System.out.println(Thread.currentThread().getName() + " ha disparado la transicion " + transition);
-                        if (hayDisponibles()) {
-                            int candidato = politica.elegirTransicion(disponibles());
-                            System.out.println("Transicion candidata elegida: " + candidato + ". Activando hilo en cola de condicion");
-                            colaCondicion[candidato].release();
-                            return true;
-                        } else {
-                            k = false;
-                        }
-                    } else {
-                        System.out.println(Thread.currentThread().getName() + " ha salido del monitor. La transicion " + transition + " no se ha disparado.");
-                        mutex.release();
-                        System.out.println("Transicion " + transition + " no disparada, yendo a cola de condicion");
-                        enviarAColaCondicion(transition);
-                    }
-                }
-                System.out.println(Thread.currentThread().getName() + " ha salido del monitor");
-                mutex.release();
+                //System.out.println("Hilo " + Thread.currentThread().getName() + " saliendo del monitor");
                 return true;
+            } else {
+                //System.out.println("Hilo " + Thread.currentThread().getName() + " esperando en la cola de condicion de la transicion " + transition);
+                mutex.release();
+                try {
+                    enviarAColaCondicion(transition);
+                }catch (InterruptedException e) {
+                    Thread.currentThread().interrupt(); // Restore interrupted status
+                    return false;
+                }
+                colaDeEntrada(); // Re-acquire mutex after being woken up
             }
+        }
     }
 }
