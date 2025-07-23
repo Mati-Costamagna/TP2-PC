@@ -1,5 +1,8 @@
 package main.red;
 
+import main.monitor.ColaCondicion;
+import main.monitor.Mutex;
+
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -7,12 +10,22 @@ public class RdP {
 
     private int[] marcado;
     private final int[][] matrizIncidencia;
+    private final ColaCondicion colaCondicion;
+    private final Mutex mutex;
     private final boolean[] transicionesSensibilizadas;
+    private final long[] tiempoSensibilizacion;
+    private final long[] alpha;
+    private final long[] beta;
     private final Object lock = new Object();
 
-    public RdP(int[][] matrizI, int[] marcadoInicial) {
-        this.marcado = marcadoInicial;
-        this.matrizIncidencia = matrizI;
+    public RdP(int[][] matrizI, int[] marcadoInicial, long[][] cis, Mutex m, ColaCondicion c) {
+        this.marcado = marcadoInicial.clone();
+        this.matrizIncidencia = matrizI.clone();
+        this.colaCondicion = c;
+        this.mutex = m;
+        this.alpha = cis[0];
+        this.beta = cis[1];
+        this.tiempoSensibilizacion = new long[matrizI.length];
         transicionesSensibilizadas = new boolean[matrizI.length];
         setTransicionesSensibilizadas();
     }
@@ -28,19 +41,25 @@ public class RdP {
                     }
                 }
                 transicionesSensibilizadas[t] = sensibilizada;
+                tiempoSensibilizacion[t] = transicionesSensibilizadas[t] && tiempoSensibilizacion[t] != 0
+                        ? tiempoSensibilizacion[t]
+                        : System.currentTimeMillis(); // Actualizar tiempo de sensibilización si es necesario
             }
         }
     }
 
     private boolean invariantesPlaza() {
         if ((marcado[0] + marcado[1] + marcado[3] + marcado[4] + marcado[5] + marcado[7] + marcado[8] + marcado[9] + marcado[10] + marcado[11]) != 3) {
-            System.out.println("Invariante 1");
+//            System.out.println("Invariante 1");
+//            System.exit(-1);
             return false;
         } else if (((marcado[1] + marcado[2]) != 1)) {
-            System.out.println("Invariante 2");
+//            System.out.println("Invariante 2");
+//            System.exit(-1);
             return false;
         } else if ((marcado[4] + marcado[5] + marcado[6] + marcado[7] + marcado[8] + marcado[9] + marcado[10]) != 1){
-            System.out.println("Invariante 3");
+//            System.out.println("Invariante 3");
+//            System.exit(-1);
             return false;
         }
         return (marcado[0] + marcado[1] + marcado[3] + marcado[4] + marcado[5] + marcado[7] + marcado[8] + marcado[9] + marcado[10] + marcado[11]) == 3 &&
@@ -54,8 +73,58 @@ public class RdP {
         }
     }
 
+    public boolean testVentanaTiempo(int t) {
+        return (System.currentTimeMillis() - this.tiempoSensibilizacion[t] >= alpha[t])
+                && (System.currentTimeMillis() - this.tiempoSensibilizacion[t] <= beta[t]);
+    }
+
+    public boolean antesDeLaVentanaTiempo(int t) {
+        return (System.currentTimeMillis() - this.tiempoSensibilizacion[t] < alpha[t]);
+    }
+
+    public long getTimeToWait(int t) {
+        long tiempoTranscurrido = System.currentTimeMillis() - this.tiempoSensibilizacion[t];
+        long tiempoRestante = alpha[t] - tiempoTranscurrido;
+        return Math.max(0, tiempoRestante);
+    }
+
+    private boolean hayAlguienEsperando() {
+        for(int i = 0; i < colaCondicion.length(); i++) {
+            if (colaCondicion.hasQueuedThreads(i) && transicionesSensibilizadas[i]) {
+                return true; // Hay al menos un hilo esperando en la cola de condición
+            }
+        }
+        return false;
+    }
+
+    private boolean estaSensibilizada(int t) {
+        if(transicionesSensibilizadas[t]) {
+            if (testVentanaTiempo(t)) {
+                return true;
+                //return !hayAlguienEsperando();
+            } else {
+                boolean antes = antesDeLaVentanaTiempo(t);
+                System.out.println("Sale hilo " + Thread.currentThread().getName() + " del monitor por estar fuera de la ventana");
+                if (antes) {
+                    System.out.println("Hilo " + Thread.currentThread().getName() + " yendo a dormir por " + getTimeToWait(t) + " ms");
+                    try{
+                        Thread.sleep(getTimeToWait(t));
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt(); // Restore interrupted status
+                        return false; // Si se interrumpe, no se dispara la transición
+                    }
+                    System.out.println("Hilo " + Thread.currentThread().getName() + " despertado, entrando a la cola de condicion");
+                    return transicionesSensibilizadas[t];
+                }
+                return false;
+            }
+        }else{
+            return false; // No está sensibilizada si no cumple la condición de marcado
+        }
+    }
+
     public boolean disparar(int t) {
-        if(!transicionesSensibilizadas[t]) {
+        if(!estaSensibilizada(t)){
             //System.out.println("La transición " + t + " no está sensibilizada.");
             return false; // No se dispara la transición si no está sensibilizada
         }else {

@@ -19,13 +19,13 @@ public class Transiciones extends Thread {
 
     @Override
     public void run(){
-        while(!Thread.currentThread().isInterrupted()){
+        while(!logger.isFinalizado()){
             for(int transicion : transiciones) {
                 boolean disparo = false;
                 while (!disparo && !Thread.currentThread().isInterrupted()) {
                     disparo = monitor.fireTransition(transicion);
                     if (disparo) {
-                        System.out.println("Transicion " +  transicion + " disparada por " + Thread.currentThread().getName());
+                        //System.out.println("Transicion " +  transicion + " disparada por " + Thread.currentThread().getName());
                         logger.logTransicion(transicion);
                     }
                     try { Thread.sleep(1); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }

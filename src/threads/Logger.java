@@ -30,7 +30,7 @@ public class Logger extends Thread {
 
     public void logTransicion(int transicion) {
         if (!finalizar.get()) {
-            transiciones.offer(String.valueOf(transicion));
+            transiciones.add(String.valueOf(transicion));
         }
     }
 
@@ -40,23 +40,43 @@ public class Logger extends Thread {
 
     public void finalizarLogger() {
         finalizar.set(true);
-        this.interrupt();
+    }
+
+    public boolean isFinalizado() {
+        return finalizar.get();
     }
 
     public boolean alcanzoCantMaxInvariantes() {
         return analizador.totalInvariantes() > 200;
     }
 
+    private String obtenerSiguienteTransicion() {
+        if(transiciones.isEmpty() && alcanzoCantMaxInvariantes()) {
+            finalizarLogger();
+            return null;
+        }
+        try {
+            if (isFinalizado()){
+                return transiciones.poll();
+            }else{
+                return transiciones.take();
+            }
+        }catch (InterruptedException e){
+            System.out.println("Logger interrumpido: " + e.getMessage());
+            return null;
+        }
+    }
+
     @Override
     public void run() {
         try {
-            while (!alcanzoCantMaxInvariantes() && (!finalizar.get() || !transiciones.isEmpty())) {
-                String transicion = finalizar.get() ? transiciones.poll() : transiciones.take();
+            while (!alcanzoCantMaxInvariantes() && (!isFinalizado() || !transiciones.isEmpty())) {
+                String transicion = obtenerSiguienteTransicion();
                 if (transicion == null) break;
                 writer.write(transicion + " ");
                 contador.incrementar(transicion);
             }
-        } catch (InterruptedException | IOException e) {
+        } catch (IOException e) {
             e.printStackTrace();
             Thread.currentThread().interrupt();
         } finally {

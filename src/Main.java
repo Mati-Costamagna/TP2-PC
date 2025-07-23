@@ -1,5 +1,6 @@
 package main;
 
+import main.monitor.ColaCondicion;
 import main.monitor.Monitor;
 import main.monitor.Mutex;
 import main.politicas.*;
@@ -35,11 +36,15 @@ public class Main {
                 {11}
         };
 
+        long[] alpha = {0,30,0,30,30,0,30,0,30,30,30,0};
+        long[] beta = {Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE};
+        long[][] cis = {alpha, beta};
         // Inicialización de la Red de Petri, la política y el monitor
         Mutex mutex = new Mutex();
-        RdP red = new RdP(matrizI,marcadoInicial);
+        ColaCondicion colaCondicion = new ColaCondicion(matrizI[0].length);
+        RdP red = new RdP(matrizI, marcadoInicial, cis, mutex, colaCondicion);
         PoliticaInterface politica = new PoliticaAleatoria(); // PoliticaAleatoria() o PoliticaPrioritaria()
-        Monitor monitor = new Monitor(red, mutex, politica);
+        Monitor monitor = new Monitor(red, mutex, politica, colaCondicion);
 
         // Inicialización del Logger y su hilo
         Logger logger = new Logger(politica);
@@ -55,20 +60,18 @@ public class Main {
         System.out.println("Esperando a que el logger termine de procesar...");
         while(!logger.alcanzoCantMaxInvariantes()) {
             // Espera activa hasta que se alcancen las condiciones de parada
-            Thread.sleep(1000);
+            Thread.sleep(100);
         }
 
+        System.out.println("Finalizando logger");
         logger.finalizarLogger();
-
-        // Interrumpe y espera a que los hilos de transiciones terminen
-        for (Thread t : transicionesThreads) {
-            t.interrupt();
-        }
-
+        System.out.println("Finalizando logger...");
     // Esperar a que terminen
         for (Thread t : transicionesThreads) {
             t.join();
         }
+
+        System.out.println("Hilos finalizados. Esperando al logger...");
         logger.join();
         System.out.println("\n--- Ejecución terminada. Revisa 'log_estadisticas.txt' para los resultados ---");
     }
