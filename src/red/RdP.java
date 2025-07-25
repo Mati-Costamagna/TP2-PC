@@ -16,7 +16,7 @@ public class RdP {
     private final long[] tiempoSensibilizacion;
     private final long[] alpha;
     private final long[] beta;
-    private final Object lock = new Object();
+    //private final Object lock = new Object();
 
     public RdP(int[][] matrizI, int[] marcadoInicial, long[][] cis, Mutex m, ColaCondicion c) {
         this.marcado = marcadoInicial.clone();
@@ -31,7 +31,7 @@ public class RdP {
     }
 
     private void setTransicionesSensibilizadas() {
-        synchronized (lock) {
+        //synchronized (lock) {
             for (int t = 0; t < matrizIncidencia[0].length; t++) { //transiciones
                 boolean sensibilizada = true;
                 for (int p = 0; p < matrizIncidencia.length; p++) { //plazas
@@ -45,7 +45,7 @@ public class RdP {
                         ? tiempoSensibilizacion[t]
                         : System.currentTimeMillis(); // Actualizar tiempo de sensibilización si es necesario
             }
-        }
+        //}
     }
 
     private boolean invariantesPlaza() {
@@ -68,9 +68,9 @@ public class RdP {
     }
 
     public boolean[] getTransicionesSensibilizadas() {
-        synchronized (lock) {
+        //synchronized (lock) {
             return transicionesSensibilizadas;
-        }
+        //}
     }
 
     public boolean testVentanaTiempo(int t) {

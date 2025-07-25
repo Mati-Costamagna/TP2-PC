@@ -40,6 +40,7 @@ public class Logger extends Thread {
 
     public void finalizarLogger() {
         finalizar.set(true);
+        transiciones.add("TERMINAR");
     }
 
     public boolean isFinalizado() {
@@ -72,7 +73,8 @@ public class Logger extends Thread {
         try {
             while (!alcanzoCantMaxInvariantes() && (!isFinalizado() || !transiciones.isEmpty())) {
                 String transicion = obtenerSiguienteTransicion();
-                if (transicion == null) break;
+                if (transicion == null || transicion.equals("TERMINAR")) break;
+
                 writer.write(transicion + " ");
                 contador.incrementar(transicion);
             }
@@ -80,6 +82,7 @@ public class Logger extends Thread {
             e.printStackTrace();
             Thread.currentThread().interrupt();
         } finally {
+            // Guardar estadística al final como ya lo hacés
             try {
                 writer.write("\n--- Política: " + politica + "\n");
                 writer.write("--- Conteo por transición ---\n");
@@ -99,4 +102,5 @@ public class Logger extends Thread {
             }
         }
     }
+
 }
