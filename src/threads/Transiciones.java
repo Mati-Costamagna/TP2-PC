@@ -1,8 +1,8 @@
 package main.threads;
 import main.monitor.Monitor;
+import main.monitor.SensibilizadoConTiempo;
 
 
-import javax.swing.plaf.TableHeaderUI;
 import java.util.Random;
 
 public class Transiciones extends Thread {
@@ -10,11 +10,13 @@ public class Transiciones extends Thread {
     private final Random rand = new Random();
     private int[] transiciones;
     private Logger logger;
+    private SensibilizadoConTiempo sensibilizadoConTiempo;
 
-    public Transiciones(Monitor m, int[] t, Logger l) {
+    public Transiciones(Monitor m, int[] t, Logger l, SensibilizadoConTiempo s) {
         monitor = m;
         transiciones = t;
         logger = l;
+        sensibilizadoConTiempo = s;
     }
 
     @Override
@@ -27,6 +29,9 @@ public class Transiciones extends Thread {
                     if (disparo) {
                         //System.out.println("Transicion " +  transicion + " disparada por " + Thread.currentThread().getName());
                         logger.logTransicion(transicion);
+                    }else if (sensibilizadoConTiempo.tieneQueDormir(transicion)) {
+                        //try { Thread.sleep(sensibilizadoConTiempo.tieneQueDormir(transicion)); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+                        sensibilizadoConTiempo.dormir(transicion);
                     }
                     try { Thread.sleep(1); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
                 }

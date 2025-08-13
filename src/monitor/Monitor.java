@@ -3,9 +3,6 @@ package main.monitor;
 import main.politicas.PoliticaInterface;
 import main.red.RdP;
 
-import java.util.Arrays;
-import java.util.concurrent.Semaphore;
-
 public class Monitor implements MonitorInterface {
     private final RdP red;
     private final Mutex mutex;
@@ -63,8 +60,8 @@ public class Monitor implements MonitorInterface {
                 } else {
                     System.out.println("Hilo " + Thread.currentThread().getName() + " esperando en la cola de condicion de la transicion " + transition);
                     mutex.release();
-                    if (sensibilizadoConTiempo.tieneQueDormir(transition) > 0) {
-                        sensibilizadoConTiempo.dormir(transition, sensibilizadoConTiempo.tieneQueDormir(transition));
+                    if (sensibilizadoConTiempo.tieneQueDormir(transition)) {
+                        return false;
                     } else {
                         colaCondicion.enviarAColaCondicion(transition);
                         mutex.acquire();

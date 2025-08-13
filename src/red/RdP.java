@@ -81,9 +81,8 @@ public class RdP {
     }
 
     private void setEsperando(int t){
-        sensibilizadoConTiempo.setDormir(t);
+        sensibilizadoConTiempo.setDormir(t, getTimeToWait(t));
     }
-
 
     private boolean estaSensibilizada(int t) {
         if(transicionesSensibilizadas[t]) {

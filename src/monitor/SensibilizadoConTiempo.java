@@ -1,30 +1,30 @@
 package main.monitor;
 
 public class SensibilizadoConTiempo {
-    private boolean[] transicionesDormidas;
-    private long[] hilosADormir;
+    private final boolean[] transicionesLevantadas;
+    private final long[] hilosADormir;
 
-    public SensibilizadoConTiempo(boolean[] transiciones) {
-        this.transicionesDormidas = new boolean[transiciones.length];
-        this.hilosADormir = new long[transiciones.length];
+    public SensibilizadoConTiempo(int size) {
+        this.transicionesLevantadas = new boolean[size];
+        this.hilosADormir = new long[size];
     }
 
     public boolean estaLevantado(int t){
-        return transicionesDormidas[t];
+        return transicionesLevantadas[t];
     }
 
-    public void dormir(int t, long tiempo){
+    public void dormir(int t){
         try{
-            Thread.sleep(tiempo);
-            transicionesDormidas[t] = true;
+            Thread.sleep(tiempoADormir(t));
+            transicionesLevantadas[t] = true;
         }catch (InterruptedException e){
             System.out.println("Hilo interrumpido al intentar dormir");
         }
     }
 
     public boolean hayAlguienLevantado(){
-        for (int i = 0; i < transicionesDormidas.length; i++) {
-            if(transicionesDormidas[i]){
+        for (int i = 0; i < transicionesLevantadas.length; i++) {
+            if(transicionesLevantadas[i]){
                 return true;
             }
         }
@@ -32,14 +32,18 @@ public class SensibilizadoConTiempo {
     }
 
     public void entroAlMonitor(int t){
-        transicionesDormidas[t] = false;
+        transicionesLevantadas[t] = false;
     }
 
     public void setDormir(int t, long tiempo){
         hilosADormir[t] = tiempo;
     }
 
-    public long tieneQueDormir(int t){
+    private long tiempoADormir(int t){
         return hilosADormir[t];
+    }
+
+    public boolean tieneQueDormir(int t){
+        return tiempoADormir(t) > 0;
     }
 }

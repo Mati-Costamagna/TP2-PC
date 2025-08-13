@@ -3,6 +3,7 @@ package main;
 import main.monitor.ColaCondicion;
 import main.monitor.Monitor;
 import main.monitor.Mutex;
+import main.monitor.SensibilizadoConTiempo;
 import main.politicas.*;
 import main.red.RdP;
 import main.threads.Transiciones;
@@ -36,15 +37,16 @@ public class Main {
                 {11}
         };
 
-        long[] alpha = {0,30,0,30,30,0,30,0,30,30,30,0};
+        long[] alpha = {0,75,0,75,75,0,75,0,75,75,75,0};
         long[] beta = {Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE};
         long[][] cis = {alpha, beta};
         // Inicialización de la Red de Petri, la política y el monitor
         Mutex mutex = new Mutex();
         ColaCondicion colaCondicion = new ColaCondicion(matrizI[0].length);
-        RdP red = new RdP(matrizI, marcadoInicial, cis, mutex, colaCondicion);
+        SensibilizadoConTiempo sensibilizadoConTiempo = new SensibilizadoConTiempo(matrizI[0].length);
+        RdP red = new RdP(matrizI, marcadoInicial, cis, mutex, sensibilizadoConTiempo);
         PoliticaInterface politica = new PoliticaAleatoria(); // PoliticaAleatoria() o PoliticaPrioritaria()
-        Monitor monitor = new Monitor(red, mutex, politica, colaCondicion);
+        Monitor monitor = new Monitor(red, mutex, politica, colaCondicion, sensibilizadoConTiempo);
 
         // Inicialización del Logger y su hilo
         Logger logger = new Logger(politica);
@@ -53,7 +55,7 @@ public class Main {
         // Creación y start de los hilos de transiciones
         Thread[] transicionesThreads = new Thread[segmentos.length];
         for (int i = 0; i < transicionesThreads.length; i++) {
-            transicionesThreads[i] = new Transiciones(monitor, segmentos[i], logger);
+            transicionesThreads[i] = new Transiciones(monitor, segmentos[i], logger, sensibilizadoConTiempo);
             transicionesThreads[i].start();
         }
 
