@@ -8,17 +8,17 @@ public class PoliticaPrioritaria implements PoliticaInterface {
     private final Random rand = new Random();
 
     @Override
-    public int elegirTransicion(boolean[] t) {
+    public int elegirTransicion(boolean[] transitions) {
 
         // Prioridad absoluta a la transición 5
-        if (t[5]) {
+        if (transitions[5]) {
             return 5;
         }
 
         // Listar todas las transiciones disponibles
         ArrayList<Integer> disponibles = new ArrayList<>();
-        for (int i = 0; i < t.length; i++) {
-            if (t[i]) {
+        for (int i = 0; i < transitions.length; i++) {
+            if (transitions[i]) {
                 disponibles.add(i);
             }
         }

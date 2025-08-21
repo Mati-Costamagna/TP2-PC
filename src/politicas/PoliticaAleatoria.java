@@ -8,12 +8,12 @@ public class PoliticaAleatoria implements PoliticaInterface {
     private final int[] conflictos ={2,5,7};
 
     @Override
-    public int elegirTransicion(boolean[] t) {
+    public int elegirTransicion(boolean[] transitions) {
         ArrayList<Integer> candidatas = new ArrayList<>();
 
         // Primero buscamos en las transiciones conflictivas
         for (int c : conflictos) {
-            if (c >= 0 && c < t.length && t[c]) {
+            if (c >= 0 && c < transitions.length && transitions[c]) {
                 candidatas.add(c);
             }
         }
@@ -24,8 +24,8 @@ public class PoliticaAleatoria implements PoliticaInterface {
         }
 
         // Si no, buscamos cualquier transición disponible
-        for (int i = 0; i < t.length; i++) {
-            if (t[i]) {
+        for (int i = 0; i < transitions.length; i++) {
+            if (transitions[i]) {
                 candidatas.add(i);
             }
         }
