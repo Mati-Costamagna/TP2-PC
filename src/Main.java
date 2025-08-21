@@ -44,7 +44,7 @@ public class Main {
         Mutex mutex = new Mutex();
         ColaCondicion colaCondicion = new ColaCondicion(matrizI[0].length);
         SensibilizadoConTiempo sensibilizadoConTiempo = new SensibilizadoConTiempo(matrizI[0].length);
-        RdP red = new RdP(matrizI, marcadoInicial, cis, mutex, sensibilizadoConTiempo);
+        RdP red = new RdP(matrizI, marcadoInicial, cis, sensibilizadoConTiempo);
         PoliticaInterface politica = new PoliticaAleatoria(); // PoliticaAleatoria() o PoliticaPrioritaria()
         Monitor monitor = new Monitor(red, mutex, politica, colaCondicion, sensibilizadoConTiempo);
 

@@ -1,27 +1,20 @@
 package main.red;
 
-import main.monitor.ColaCondicion;
-import main.monitor.Mutex;
 import main.monitor.SensibilizadoConTiempo;
-
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class RdP {
 
     private int[] marcado;
     private final int[][] matrizIncidencia;
     private final SensibilizadoConTiempo sensibilizadoConTiempo;
-    private final Mutex mutex;
     private final boolean[] transicionesSensibilizadas;
     private final long[] tiempoSensibilizacion;
     private final long[] alpha;
     private final long[] beta;
 
-    public RdP(int[][] matrizI, int[] marcadoInicial, long[][] cis, Mutex m, SensibilizadoConTiempo s) {
+    public RdP(int[][] matrizI, int[] marcadoInicial, long[][] cis, SensibilizadoConTiempo s) {
         this.marcado = marcadoInicial.clone();
         this.matrizIncidencia = matrizI.clone();
-        this.mutex = m;
         this.alpha = cis[0];
         this.beta = cis[1];
         this.sensibilizadoConTiempo = s;
@@ -60,40 +53,38 @@ public class RdP {
     }
 
     public boolean[] getTransicionesSensibilizadas() {
-        //synchronized (lock) {
-            return transicionesSensibilizadas;
-        //}
+        return transicionesSensibilizadas;
     }
 
-    public boolean testVentanaTiempo(int t) {
-        return (System.currentTimeMillis() - this.tiempoSensibilizacion[t] >= alpha[t])
-                && (System.currentTimeMillis() - this.tiempoSensibilizacion[t] <= beta[t]);
+    public boolean testVentanaTiempo(int transition) {
+        return (System.currentTimeMillis() - this.tiempoSensibilizacion[transition] >= alpha[transition])
+                && (System.currentTimeMillis() - this.tiempoSensibilizacion[transition] <= beta[transition]);
     }
 
-    public boolean antesDeLaVentanaTiempo(int t) {
-        return (System.currentTimeMillis() - this.tiempoSensibilizacion[t] < alpha[t]);
+    public boolean antesDeLaVentanaTiempo(int transition) {
+        return (System.currentTimeMillis() - this.tiempoSensibilizacion[transition] < alpha[transition]);
     }
 
-    public long getTimeToWait(int t) {
-        long tiempoTranscurrido = System.currentTimeMillis() - this.tiempoSensibilizacion[t];
-        long tiempoRestante = alpha[t] - tiempoTranscurrido;
+    public long getTimeToWait(int transition) {
+        long tiempoTranscurrido = System.currentTimeMillis() - this.tiempoSensibilizacion[transition];
+        long tiempoRestante = alpha[transition] - tiempoTranscurrido;
         return Math.max(0, tiempoRestante);
     }
 
-    private void setEsperando(int t){
-        sensibilizadoConTiempo.setDormir(t, getTimeToWait(t));
+    private void setEsperando(int transition){
+        sensibilizadoConTiempo.setDormir(transition, getTimeToWait(transition));
     }
 
-    private boolean estaSensibilizada(int t) {
-        if(transicionesSensibilizadas[t]) {
-            if (testVentanaTiempo(t)) {
+    private boolean estaSensibilizadaEnTiempo(int transition) {
+        if(transicionesSensibilizadas[transition]) {
+            if (testVentanaTiempo(transition)) {
                 return true;
             } else {
-                boolean antes = antesDeLaVentanaTiempo(t);
+                boolean antes = antesDeLaVentanaTiempo(transition);
                 System.out.println("Sale hilo " + Thread.currentThread().getName() + " del monitor por estar fuera de la ventana");
                 if (antes) {
-                    System.out.println("Hilo " + Thread.currentThread().getName() + " yendo a dormir por " + getTimeToWait(t) + " ms fuera del monitor");
-                    setEsperando(t);
+                    System.out.println("Hilo " + Thread.currentThread().getName() + " yendo a dormir por " + getTimeToWait(transition) + " ms fuera del monitor");
+                    setEsperando(transition);
                 }
                 return false;
             }
@@ -102,14 +93,14 @@ public class RdP {
         }
     }
 
-    public boolean disparar(int t) {
-        if(!estaSensibilizada(t)){
+    public boolean disparar(int transition) {
+        if(!estaSensibilizadaEnTiempo(transition)){
             //System.out.println("La transición " + t + " no está sensibilizada.");
             return false; // No se dispara la transición si no está sensibilizada
         }else {
             int[] marcadoAnterior = marcado.clone();
             for (int i = 0; i < this.matrizIncidencia.length; i++) {
-                marcado[i] += matrizIncidencia[i][t];
+                marcado[i] += matrizIncidencia[i][transition];
                 if (marcado[i] < 0) {
                     //System.out.println("Marcado negativo en la plaza " + i + ", revertiendo el marcado.");
                     marcado = marcadoAnterior.clone(); // Revertir el marcado si se vuelve negativo

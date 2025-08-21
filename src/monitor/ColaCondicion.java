@@ -39,16 +39,4 @@ public class ColaCondicion {
         }
     }
 
-    public boolean hayAlguienEsperando(){
-        for (Semaphore semaphore : semaphores) {
-            if (semaphore.hasQueuedThreads()) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public int length() {
-        return semaphores.length;
-    }
 }
