@@ -2,15 +2,11 @@ package main.threads;
 import main.monitor.Monitor;
 import main.monitor.SensibilizadoConTiempo;
 
-
-import java.util.Random;
-
 public class Transiciones extends Thread {
-    Monitor monitor;
-    private final Random rand = new Random();
-    private int[] transiciones;
-    private Logger logger;
-    private SensibilizadoConTiempo sensibilizadoConTiempo;
+    private final Monitor monitor;
+    private final int[] transiciones;
+    private final Logger logger;
+    private final SensibilizadoConTiempo sensibilizadoConTiempo;
 
     public Transiciones(Monitor m, int[] t, Logger l, SensibilizadoConTiempo s) {
         monitor = m;
