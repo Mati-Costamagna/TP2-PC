@@ -1,8 +1,8 @@
 package main.monitor;
 
 public class SensibilizadoConTiempo {
-    private final boolean[] transicionesLevantadas;
-    private final long[] hilosADormir;
+    private  boolean[] transicionesLevantadas;
+    private long[] hilosADormir;
 
     public SensibilizadoConTiempo(int size) {
         this.transicionesLevantadas = new boolean[size];

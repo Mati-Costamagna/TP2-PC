@@ -37,7 +37,8 @@ public class Main {
                 {11}
         };
 
-        long[] alpha = {0,100,0,75,75,0,75,0,75,75,75,0};
+        //long[] alpha = {0,75,0,75,75,0,75,0,75,75,75,0};
+        long[] alpha = {0,0,0,0,0,0,0,0,0,0,0,0};
         long[] beta = {Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE};
         long[][] cis = {alpha, beta};
         // Inicialización de la Red de Petri, la política y el monitor
@@ -69,6 +70,7 @@ public class Main {
         logger.finalizarLogger();
         System.out.println("Finalizando logger...");
     // Esperar a que terminen
+        //colaCondicion.despertarTodos();
         for (Thread t : transicionesThreads) {
             t.join();
         }

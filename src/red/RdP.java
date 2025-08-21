@@ -62,6 +62,7 @@ public class RdP {
     }
 
     public boolean antesDeLaVentanaTiempo(int transition) {
+        System.out.println(System.currentTimeMillis());
         return (System.currentTimeMillis() - this.tiempoSensibilizacion[transition] < alpha[transition]);
     }
 
@@ -71,8 +72,8 @@ public class RdP {
         return Math.max(0, tiempoRestante);
     }
 
-    private void setEsperando(int transition){
-        sensibilizadoConTiempo.setDormir(transition, getTimeToWait(transition));
+    private void setEsperando(int transition, long tiempoEspera) {
+        sensibilizadoConTiempo.setDormir(transition, tiempoEspera);
     }
 
     private boolean estaSensibilizadaEnTiempo(int transition) {
@@ -80,11 +81,10 @@ public class RdP {
             if (testVentanaTiempo(transition)) {
                 return true;
             } else {
-                boolean antes = antesDeLaVentanaTiempo(transition);
-                System.out.println("Sale hilo " + Thread.currentThread().getName() + " del monitor por estar fuera de la ventana");
-                if (antes) {
+                long tiempoEspera = getTimeToWait(transition);
+                if (tiempoEspera > 0) {
                     System.out.println("Hilo " + Thread.currentThread().getName() + " yendo a dormir por " + getTimeToWait(transition) + " ms fuera del monitor");
-                    setEsperando(transition);
+                    setEsperando(transition, tiempoEspera);
                 }
                 return false;
             }
@@ -95,21 +95,18 @@ public class RdP {
 
     public boolean disparar(int transition) {
         if(!estaSensibilizadaEnTiempo(transition)){
-            //System.out.println("La transición " + t + " no está sensibilizada.");
             return false; // No se dispara la transición si no está sensibilizada
         }else {
             int[] marcadoAnterior = marcado.clone();
             for (int i = 0; i < this.matrizIncidencia.length; i++) {
                 marcado[i] += matrizIncidencia[i][transition];
                 if (marcado[i] < 0) {
-                    //System.out.println("Marcado negativo en la plaza " + i + ", revertiendo el marcado.");
                     marcado = marcadoAnterior.clone(); // Revertir el marcado si se vuelve negativo
                     return false; // No se dispara la transición
                 }
             }
             if (!invariantesPlaza()) {
                 marcado = marcadoAnterior.clone(); // Revertir el marcado si no se cumple la invariante de plaza
-                //System.out.println("No se cumple la invariante de plaza, revirtiendo el marcado.");
                 return false; // No se cumple la invariante de plaza, no se dispara la transición
             } else {
                 setTransicionesSensibilizadas();

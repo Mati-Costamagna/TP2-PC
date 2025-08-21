@@ -39,4 +39,11 @@ public class ColaCondicion {
         }
     }
 
+    public void despertarTodos() {
+        for(int i = 0; i < semaphores.length; i++) {
+            if(semaphores[i].hasQueuedThreads()) {
+                sacarDeColaCondicion(i);
+            }
+        }
+    }
 }

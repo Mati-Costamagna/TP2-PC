@@ -17,7 +17,7 @@ public class Transiciones extends Thread {
 
     @Override
     public void run(){
-        while(!logger.isFinalizado()){
+        while(!logger.isFinalizado() ){
             for(int transicion : transiciones) {
                 boolean disparo = false;
                 while (!disparo && !Thread.currentThread().isInterrupted()) {

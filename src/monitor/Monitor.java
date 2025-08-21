@@ -57,11 +57,13 @@ public class Monitor implements MonitorInterface {
                     }
                     break;
                 } else {
-                    System.out.println("Hilo " + Thread.currentThread().getName() + " esperando en la cola de condicion de la transicion " + transition);
-                    mutex.release();
                     if (sensibilizadoConTiempo.tieneQueDormir(transition)) {
+                        System.out.println("Hilo " + Thread.currentThread().getName() + " tiene que dormir por fuera del monitor");
+                        mutex.release();
                         return false;
                     } else {
+                        System.out.println("Hilo " + Thread.currentThread().getName() + " esperando en la cola de condicion de la transicion " + transition);
+                        mutex.release();
                         colaCondicion.enviarAColaCondicion(transition);
                         mutex.acquire();
                         System.out.println("Entro hilo " + Thread.currentThread().getName() + " al monitor");

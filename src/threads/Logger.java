@@ -53,7 +53,7 @@ public class Logger extends Thread {
 
     private String obtenerSiguienteTransicion() {
         if(transiciones.isEmpty() && alcanzoCantMaxInvariantes()) {
-            finalizarLogger();
+            //finalizarLogger();
             return null;
         }else {
             try {
