@@ -9,41 +9,41 @@ public class SensibilizadoConTiempo {
         this.hilosADormir = new long[size];
     }
 
-    public boolean estaLevantado(int t){
-        return transicionesLevantadas[t];
+    public boolean estaLevantado(int transition){
+        return transicionesLevantadas[transition];
     }
 
-    public void dormir(int t){
+    public void dormir(int transition){
         try{
-            Thread.sleep(tiempoADormir(t));
-            transicionesLevantadas[t] = true;
+            Thread.sleep(tiempoADormir(transition));
+            transicionesLevantadas[transition] = true;
         }catch (InterruptedException e){
             System.out.println("Hilo interrumpido al intentar dormir");
         }
     }
 
     public boolean hayAlguienLevantado(){
-        for (int i = 0; i < transicionesLevantadas.length; i++) {
-            if(transicionesLevantadas[i]){
+        for (boolean transicionesLevantada : transicionesLevantadas) {
+            if (transicionesLevantada) {
                 return true;
             }
         }
         return false;
     }
 
-    public void entroAlMonitor(int t){
-        transicionesLevantadas[t] = false;
+    public void entroAlMonitor(int transition){
+        transicionesLevantadas[transition] = false;
     }
 
-    public void setDormir(int t, long tiempo){
-        hilosADormir[t] = tiempo;
+    public void setDormir(int transition, long tiempo){
+        hilosADormir[transition] = tiempo;
     }
 
-    private long tiempoADormir(int t){
-        return hilosADormir[t];
+    private long tiempoADormir(int transition){
+        return hilosADormir[transition];
     }
 
-    public boolean tieneQueDormir(int t){
-        return tiempoADormir(t) > 0;
+    public boolean tieneQueDormir(int transition){
+        return tiempoADormir(transition) > 0;
     }
 }

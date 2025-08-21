@@ -55,16 +55,17 @@ public class Logger extends Thread {
         if(transiciones.isEmpty() && alcanzoCantMaxInvariantes()) {
             finalizarLogger();
             return null;
-        }
-        try {
-            if (isFinalizado()){
-                return transiciones.poll();
-            }else{
-                return transiciones.take();
+        }else {
+            try {
+                if (isFinalizado()) {
+                    return transiciones.poll();
+                } else {
+                    return transiciones.take();
+                }
+            } catch (InterruptedException e) {
+                System.out.println("Logger interrumpido: " + e.getMessage());
+                return null;
             }
-        }catch (InterruptedException e){
-            System.out.println("Logger interrumpido: " + e.getMessage());
-            return null;
         }
     }
 
