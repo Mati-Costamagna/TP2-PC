@@ -28,8 +28,14 @@ public class Transiciones extends Thread {
                     }else if (sensibilizadoConTiempo.tieneQueDormir(transicion)) {
                         //try { Thread.sleep(sensibilizadoConTiempo.tieneQueDormir(transicion)); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
                         sensibilizadoConTiempo.dormir(transicion);
+                    }else {
+                        try {
+                            Thread.sleep(1);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        }
                     }
-                    try { Thread.sleep(1); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+
                 }
             }
         }

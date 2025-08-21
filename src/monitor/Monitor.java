@@ -18,7 +18,6 @@ public class Monitor implements MonitorInterface {
         sensibilizadoConTiempo = s;
     }
 
-
     private boolean[] sensibilizadas(){
         return red.getTransicionesSensibilizadas();
     }
