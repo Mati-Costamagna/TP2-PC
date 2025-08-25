@@ -42,6 +42,7 @@ public class Main {
         //long[] alpha = {0,0,0,0,0,0,0,0,0,0,0,0};
         long[] beta = {Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE};
         long[][] cis = {alpha, beta};
+
         // Inicialización de la Red de Petri, la política y el monitor
         Mutex mutex = new Mutex();
         ColaCondicion colaCondicion = new ColaCondicion(matrizI[0].length);
@@ -52,7 +53,7 @@ public class Main {
 
         // Inicialización del Logger y su hilo
         Logger logger = new Logger(politica);
-        logger.start(); // Inicia el hilo del logger
+        logger.start();
 
         // Creación y start de los hilos de transiciones
         Thread[] transicionesThreads = new Thread[segmentos.length];
@@ -70,8 +71,11 @@ public class Main {
         System.out.println("Finalizando logger");
         logger.finalizarLogger();
         System.out.println("Finalizando logger...");
-        colaCondicion.SetTerminado();
-        // Esperar a que terminen
+
+        // Indicar a la cola de condición que se terminó la ejecución para que libere hilos en espera
+        colaCondicion.setTerminado();
+
+        // Esperar a que terminen su ejeccución los hilos de transiciones
         for (Thread t : transicionesThreads) {
             t.join();
         }

@@ -13,6 +13,20 @@ public class ColaCondicion {
         }
     }
 
+    private void liberarTodos() {
+        for (int i = 0; i < semaphores.length; i++) {
+            int waiting = semaphores[i].getQueueLength();
+            if (waiting > 0) {
+                semaphores[i].release(waiting);
+            }
+        }
+    }
+
+    public void setTerminado() {
+        terminado = true;
+        liberarTodos();
+    }
+
     public void sacarDeColaCondicion(int index) {
         if (index >= 0 && index < semaphores.length) {
             semaphores[index].release();
@@ -40,31 +54,8 @@ public class ColaCondicion {
         }
     }
 
-    public void liberarTodos() {
-        for (int i = 0; i < semaphores.length; i++) {
-            int waiting = semaphores[i].getQueueLength();
-            if (waiting > 0) {
-                semaphores[i].release(waiting);
-            }
-        }
-    }
-
-    public void SetTerminado() {
-            terminado = true;
-            liberarTodos();
-    }
-
     public boolean isTerminado(){
         return terminado;
     }
 
-
-
-    /*public void despertarTodos() {
-        for(int i = 0; i < semaphores.length; i++) {
-            if(semaphores[i].hasQueuedThreads()) {
-                sacarDeColaCondicion(i);
-            }
-        }
-    }*/
 }

@@ -23,10 +23,8 @@ public class Transiciones extends Thread {
                 while (!disparo && !Thread.currentThread().isInterrupted()) {
                     disparo = monitor.fireTransition(transicion);
                     if (disparo) {
-                        //System.out.println("Transicion " +  transicion + " disparada por " + Thread.currentThread().getName());
                         logger.logTransicion(transicion);
                     }else if (sensibilizadoConTiempo.tieneQueDormir(transicion)) {
-                        //try { Thread.sleep(sensibilizadoConTiempo.tieneQueDormir(transicion)); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
                         sensibilizadoConTiempo.dormir(transicion);
                     }else {
                         try {
@@ -35,7 +33,6 @@ public class Transiciones extends Thread {
                             Thread.currentThread().interrupt();
                         }
                     }
-
                 }
             }
         }

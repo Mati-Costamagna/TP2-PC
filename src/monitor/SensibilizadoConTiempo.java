@@ -9,6 +9,10 @@ public class SensibilizadoConTiempo {
         this.hilosADormir = new long[size];
     }
 
+    private long tiempoADormir(int transition){
+        return hilosADormir[transition];
+    }
+
     public boolean estaLevantado(int transition){
         return transicionesLevantadas[transition];
     }
@@ -37,10 +41,6 @@ public class SensibilizadoConTiempo {
 
     public void setDormir(int transition, long tiempo){
         hilosADormir[transition] = tiempo;
-    }
-
-    private long tiempoADormir(int transition){
-        return hilosADormir[transition];
     }
 
     public boolean tieneQueDormir(int transition){

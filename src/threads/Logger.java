@@ -28,32 +28,12 @@ public class Logger extends Thread {
         }
     }
 
-    public void logTransicion(int transicion) {
-        if (!finalizar.get()) {
-            transiciones.add(String.valueOf(transicion));
-        }
-    }
-
-    public long getTotalExecutionTimeMillis() {
+    private long getTotalExecutionTimeMillis() {
         return System.currentTimeMillis() - startTime;
-    }
-
-    public void finalizarLogger() {
-        finalizar.set(true);
-        transiciones.add("TERMINAR");
-    }
-
-    public boolean isFinalizado() {
-        return finalizar.get();
-    }
-
-    public boolean alcanzoCantMaxInvariantes() {
-        return analizador.totalInvariantes() > 200;
     }
 
     private String obtenerSiguienteTransicion() {
         if(transiciones.isEmpty() && alcanzoCantMaxInvariantes()) {
-            //finalizarLogger();
             return null;
         }else {
             try {
@@ -67,6 +47,25 @@ public class Logger extends Thread {
                 return null;
             }
         }
+    }
+
+    public void logTransicion(int transicion) {
+        if (!finalizar.get()) {
+            transiciones.add(String.valueOf(transicion));
+        }
+    }
+
+    public void finalizarLogger() {
+        finalizar.set(true);
+        transiciones.add("TERMINAR");
+    }
+
+    public boolean isFinalizado() {
+        return finalizar.get();
+    }
+
+    public boolean alcanzoCantMaxInvariantes() {
+        return analizador.totalInvariantes() > 200;
     }
 
     @Override

@@ -52,21 +52,12 @@ public class RdP {
                 ((marcado[4] + marcado[5] + marcado[6] + marcado[7] + marcado[8] + marcado[9] + marcado[10]) == 1);
     }
 
-    public boolean[] getTransicionesSensibilizadas() {
-        return transicionesSensibilizadas;
-    }
-
-    public boolean testVentanaTiempo(int transition) {
+    private boolean testVentanaTiempo(int transition) {
         return (System.currentTimeMillis() - this.tiempoSensibilizacion[transition] >= alpha[transition])
                 && (System.currentTimeMillis() - this.tiempoSensibilizacion[transition] <= beta[transition]);
     }
 
-    public boolean antesDeLaVentanaTiempo(int transition) {
-        System.out.println(System.currentTimeMillis());
-        return (System.currentTimeMillis() - this.tiempoSensibilizacion[transition] < alpha[transition]);
-    }
-
-    public long getTimeToWait(int transition) {
+    private long getTimeToWait(int transition) {
         long tiempoTranscurrido = System.currentTimeMillis() - this.tiempoSensibilizacion[transition];
         long tiempoRestante = alpha[transition] - tiempoTranscurrido;
         return Math.max(0, tiempoRestante);
@@ -91,6 +82,10 @@ public class RdP {
         }else{
             return false; // No está sensibilizada si no cumple la condición de marcado
         }
+    }
+
+    public boolean[] getTransicionesSensibilizadas() {
+        return transicionesSensibilizadas;
     }
 
     public boolean disparar(int transition) {
