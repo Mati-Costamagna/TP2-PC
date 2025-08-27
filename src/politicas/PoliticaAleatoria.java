@@ -8,24 +8,35 @@ public class PoliticaAleatoria implements PoliticaInterface {
     private final int[] conflictos ={2,5,7};
 
     @Override
-    public int elegirTransicion(boolean[] t) {
-        ArrayList<Integer> transiciones = new ArrayList<>();
-        for(int indice: conflictos) {
-            if(t[indice]) {
-                transiciones.add(indice);
+    public int elegirTransicion(boolean[] transitions) {
+        ArrayList<Integer> candidatas = new ArrayList<>();
+
+        // Primero buscamos en las transiciones conflictivas
+        for (int c : conflictos) {
+            if (c >= 0 && c < transitions.length && transitions[c]) {
+                candidatas.add(c);
             }
         }
-        if(!transiciones.isEmpty()) {
-            return transiciones.get(rand.nextInt(transiciones.size()));
+
+        // Si hay candidatas entre los conflictos, elegimos de ahí
+        if (!candidatas.isEmpty()) {
+            return candidatas.get(rand.nextInt(candidatas.size()));
         }
-        else {
-            for (int i = 0; i < t.length; i++) {
-                if (t[i]) transiciones.add(i);
+
+        // Si no, buscamos cualquier transición disponible
+        for (int i = 0; i < transitions.length; i++) {
+            if (transitions[i]) {
+                candidatas.add(i);
             }
-            if (!transiciones.isEmpty()) {
-                return transiciones.get(rand.nextInt(transiciones.size()));
-            }
-            return 0;
         }
+
+        // Elegimos aleatoriamente entre todas las disponibles, o devolvemos -1 si no hay ninguna
+        if (candidatas.isEmpty()) {
+            return -1; // No hay ninguna transición disponible para disparar
+        } else {
+            int indiceAleatorio = rand.nextInt(candidatas.size()); // Elegimos una al azar entre las candidatas
+            return candidatas.get(indiceAleatorio); // Devolvemos el índice de transición elegida
+        }
+
     }
 }

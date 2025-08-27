@@ -1,6 +1,9 @@
 package main;
 
+import main.monitor.ColaCondicion;
 import main.monitor.Monitor;
+import main.monitor.Mutex;
+import main.monitor.SensibilizadoConTiempo;
 import main.politicas.*;
 import main.red.RdP;
 import main.threads.Transiciones;
@@ -38,40 +41,55 @@ public class Main {
         }
 
         int[][] segmentos = {{0, 1},
-                {5, 6},
                 {2, 3, 4},
+                {5, 6},
                 {7, 8, 9, 10},
                 {11}
         };
 
-        RdP red = new RdP(matrizI, marcadoInicial, alpha, beta);
-        PoliticaInterface politica = new PoliticaAleatoria(); // o PoliticaPrioritaria()
-        Monitor monitor = new Monitor(red, politica);
+        //long[] alpha = {0,30,0,30,30,0,30,0,30,30,30,0};
+        long[] alpha = {0,75,0,75,75,0,75,0,75,75,75,0};
+        //long[] alpha = {0,0,0,0,0,0,0,0,0,0,0,0};
+        long[] beta = {Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE};
+        long[][] cis = {alpha, beta};
 
-        Logger logger = new Logger(politica,inicio);
+        // Inicialización de la Red de Petri, la política y el monitor
+        Mutex mutex = new Mutex();
+        ColaCondicion colaCondicion = new ColaCondicion(matrizI[0].length);
+        SensibilizadoConTiempo sensibilizadoConTiempo = new SensibilizadoConTiempo(matrizI[0].length);
+        RdP red = new RdP(matrizI, marcadoInicial, cis, sensibilizadoConTiempo);
+        PoliticaInterface politica = new PoliticaAleatoria(); // PoliticaAleatoria() o PoliticaPrioritaria()
+        Monitor monitor = new Monitor(red, mutex, politica, colaCondicion, sensibilizadoConTiempo);
+
+        // Inicialización del Logger y su hilo
+        Logger logger = new Logger(politica);
         logger.start();
 
         Thread[] transicionesThreads = new Thread[segmentos.length];
         for (int i = 0; i < transicionesThreads.length; i++) {
-            transicionesThreads[i] = new Transiciones(monitor, segmentos[i], logger);
+            transicionesThreads[i] = new Transiciones(monitor, segmentos[i], logger, sensibilizadoConTiempo);
             transicionesThreads[i].start();
         }
 
         System.out.println("Esperando a que el logger termine de procesar.");
         while(!logger.alcanzoCantMaxInvariantes()) {
-            Thread.sleep(1000);
+            // Espera activa hasta que se alcancen las condiciones de parada
+            Thread.sleep(100);
         }
+
+        System.out.println("Finalizando logger");
         logger.finalizarLogger();
+        System.out.println("Finalizando logger...");
 
-        System.out.println("Condición de parada alcanzada. Interrumpiendo hilos de transición.");
+        // Indicar a la cola de condición que se terminó la ejecución para que libere hilos en espera
+        colaCondicion.setTerminado();
 
-        for (Thread t : transicionesThreads) {
-            t.interrupt();
-        }
+        // Esperar a que terminen su ejeccución los hilos de transiciones
         for (Thread t : transicionesThreads) {
             t.join();
         }
 
+        System.out.println("Hilos finalizados. Esperando al logger...");
         logger.join();
         System.out.println("\n--- Ejecución terminada. ---");
     }

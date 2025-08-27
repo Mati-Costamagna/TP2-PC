@@ -1,20 +1,34 @@
 package main.politicas;
 
+import java.util.ArrayList;
+import java.util.Random;
+
 public class PoliticaPrioritaria implements PoliticaInterface {
 
-    public PoliticaPrioritaria() {}
+    private final Random rand = new Random();
+
     @Override
-    public  int elegirTransicion(boolean[] t){
-        if(t[5]) {
+    public int elegirTransicion(boolean[] transitions) {
+
+        // Prioridad absoluta a la transición 5
+        if (transitions[5]) {
             return 5;
         }
-        else{
-            for (int i=0; i<t.length; i++){
-                if(t[i]){
-                    return i;
-                }
+
+        // Listar todas las transiciones disponibles
+        ArrayList<Integer> disponibles = new ArrayList<>();
+        for (int i = 0; i < transitions.length; i++) {
+            if (transitions[i]) {
+                disponibles.add(i);
             }
-            return 0;
+        }
+
+        // Elegir una aleatoria si hay disponibles; sino devolver -1
+        if (disponibles.isEmpty()) {
+            return -1; // No hay transiciones disponibles
+        } else {
+            int idx = rand.nextInt(disponibles.size());
+            return disponibles.get(idx);
         }
     }
 }
