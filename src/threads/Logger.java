@@ -18,7 +18,7 @@ public class Logger extends Thread {
     private final ContadorTransiciones contador = new ContadorTransiciones();
     private final AnalizadorInvariantes analizador = new AnalizadorInvariantes(contador);
 
-    public Logger(PoliticaInterface p) {
+    public Logger(PoliticaInterface p, long inicio) {
         this.politica = p.getClass().getSimpleName();
         this.startTime = System.currentTimeMillis();
         try {
