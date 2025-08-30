@@ -47,7 +47,8 @@ public class Monitor implements MonitorInterface {
             mutex.acquire();
             sensibilizadoConTiempo.entroAlMonitor(transition);
             System.out.println("Entro hilo " + Thread.currentThread().getName() + " al monitor");
-            while (true) {
+            boolean k = true;
+            while (k) {
                 boolean fired = red.disparar(transition);
                 if (fired) {
                     System.out.println("Transicion " + transition + " disparada por " + Thread.currentThread().getName());
@@ -56,10 +57,10 @@ public class Monitor implements MonitorInterface {
                         System.out.println("Levantando " + candidato);
                         colaCondicion.sacarDeColaCondicion(candidato);
                     }
-                    break;
+                    k = false;
                 } else {
                         if (colaCondicion.isTerminado()){
-                            break;
+                            k = false;
                         }else if (sensibilizadoConTiempo.tieneQueDormir(transition)){
                             System.out.println("Hilo " + Thread.currentThread().getName() + " tiene que dormir por fuera del monitor");
                             mutex.release();

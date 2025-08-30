@@ -37,8 +37,8 @@ public class Main {
                 {11}
         };
 
-        long[] alpha = {0,30,0,30,30,0,30,0,30,30,30,0};
-        //long[] alpha = {0,75,0,75,75,0,75,0,75,75,75,0};
+        //long[] alpha = {0,30,0,30,30,0,30,0,30,30,30,0};
+        long[] alpha = {0,75,0,75,75,0,75,0,75,75,75,0};
         //long[] alpha = {0,0,0,0,0,0,0,0,0,0,0,0};
         long[] beta = {Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE};
         long[][] cis = {alpha, beta};
