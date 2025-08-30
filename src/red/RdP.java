@@ -47,7 +47,9 @@ public class RdP {
         } else if ((marcado[4] + marcado[5] + marcado[6] + marcado[7] + marcado[8] + marcado[9] + marcado[10]) != 1){
             return false;
         }
-        return true;
+        return (marcado[0] + marcado[1] + marcado[3] + marcado[4] + marcado[5] + marcado[7] + marcado[8] + marcado[9] + marcado[10] + marcado[11]) == 3 &&
+                ((marcado[1] + marcado[2]) == 1) &&
+                ((marcado[4] + marcado[5] + marcado[6] + marcado[7] + marcado[8] + marcado[9] + marcado[10]) == 1);
     }
 
     private boolean testVentanaTiempo(int transition) {
