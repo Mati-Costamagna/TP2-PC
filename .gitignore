@@ -23,3 +23,6 @@
 # System files
 .DS_Store
 Thumbs.db
+
+# Add vpp files
+*.vpp
