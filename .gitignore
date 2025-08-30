@@ -26,3 +26,13 @@ Thumbs.db
 
 # Add vpp files
 *.vpp
+*.vpp.bak_000f
+*.vpp.bak_001d
+*.vpp.bak_002d
+*.vpp.bak_003d
+*.vpp.bak_004d
+*.vpp.bak_005d
+*.vpp.bak_006d
+*.vpp.bak_007d
+*.vpp.bak_008d
+*.vpp.bak_009d
